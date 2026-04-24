@@ -50,6 +50,20 @@ export default function RootLayout() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Écouter les événements d'authentification pour la récupération de mot de passe
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        // Redirection vers l'écran de mise à jour si l'événement de récupération est détecté
+        router.replace('/(auth)/UpdatePasswordScreen');
+      } else {
+        setSession(session);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   return (
     <Stack>
       <Stack.Screen name="(auth)/LoginScreen" options={{ headerShown: false }} />
@@ -57,4 +71,4 @@ export default function RootLayout() {
       <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
     </Stack>
   );
-}
+  }

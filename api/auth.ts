@@ -28,4 +28,12 @@ export const resetPassword = async (email: string) => {
     redirectTo: 'gplayed://reset-password',
   });
   if (error) throw error;
+
+// Mise à jour du mot de passe après clic sur le lien dans l'email
+export const updateUserPassword = async (newPassword: string) => {
+  const { error } = await supabase.auth.updateUser({
+    password: newPassword,
+  });
+  if (error) throw error;
+};
 };
