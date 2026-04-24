@@ -2,7 +2,6 @@ import { supabase } from '@/lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect, useState } from 'react';
-import "../global.css";
 
 export default function RootLayout() {
   const [session, setSession] = useState<Session | null>(null);
@@ -39,6 +38,17 @@ export default function RootLayout() {
       router.replace('/(tabs)');
     }
   }, [session, initialized, segments]);
+
+  // Changement de mot de passe - Redirection après clic sur le lien dans l'email
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        // Rediriger vers l'écran de mise à jour du mot de passe
+        router.replace('/(auth)/UpdatePasswordScreen');
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   return (
     <Stack>

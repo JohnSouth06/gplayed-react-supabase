@@ -24,6 +24,8 @@ export const signInUser = async (email: string, pass: string) => {
 
 // Réinitialisation du mot de passe par email
 export const resetPassword = async (email: string) => {
-  const { error } = await supabase.auth.resetPasswordForEmail(email);
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: 'gplayed://reset-password',
+  });
   if (error) throw error;
 };
