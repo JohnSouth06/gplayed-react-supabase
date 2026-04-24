@@ -1,57 +1,105 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Tabs, useRouter } from 'expo-router'; // Ajout de useRouter
 import React from 'react';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { Link, Tabs } from 'expo-router';
-import { Pressable } from 'react-native';
-
-import Colors from '@/constants/Colors';
-import { useColorScheme } from '@/components/useColorScheme';
-import { useClientOnlyValue } from '@/components/useClientOnlyValue';
-
-// You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
-function TabBarIcon(props: {
-  name: React.ComponentProps<typeof FontAwesome>['name'];
-  color: string;
-}) {
-  return <FontAwesome size={28} style={{ marginBottom: -3 }} {...props} />;
-}
+import { TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Logo from '../../assets/images/logo.svg';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const insets = useSafeAreaInsets();
+  const router = useRouter(); // Initialisation du router
+
+  // Composant Avatar intégré au Header
+  const HeaderAvatar = () => (
+    <TouchableOpacity 
+      onPress={() => router.push('/profile')} // Navigation vers le profil
+      style={{ marginRight: 20 }}
+    >
+      <View style={{ 
+        width: 38, 
+        height: 38, 
+        borderRadius: 19, 
+        backgroundColor: '#1e1e1e', 
+        borderWidth: 1.5, 
+        borderColor: '#4CE5AE',
+        justifyContent: 'center',
+        alignItems: 'center'
+      }}>
+        {/* Tu pourras plus tard afficher l'initiale ou l'image réelle ici */}
+        <MaterialCommunityIcons name="account" size={22} color="#4CE5AE" />
+      </View>
+    </TouchableOpacity>
+  );
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        // Disable the static render of the header on web
-        // to prevent a hydration error in React Navigation v6.
-        headerShown: useClientOnlyValue(false, true),
-      }}>
+        headerShown: true,
+        tabBarShowLabel: false,
+        headerStyle: {
+          backgroundColor: '#121212',
+          borderBottomWidth: 0,
+          elevation: 0,
+          shadowOpacity: 0,
+          height: 110,
+        },
+        headerTitleAlign: 'center',
+        headerTitle: () => <Logo width={120} height={30} />,
+        headerRight: () => <HeaderAvatar />, // Notre avatar cliquable
+        headerTitleContainerStyle: { paddingBottom: 15 },
+        headerRightContainerStyle: { paddingBottom: 15 },
+
+        tabBarStyle: {
+          backgroundColor: '#121212',
+          borderTopWidth: 0,
+          height: 60 + insets.bottom,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
+          paddingTop: 8,
+        },
+        tabBarActiveTintColor: '#4CE5AE',
+        tabBarInactiveTintColor: '#6c7d76',
+      }}
+    >
+      {/* ÉCRANS INVISIBLES DANS LE MENU BAS */}
+      <Tabs.Screen 
+        name="profile" 
+        options={{ 
+          href: null, // Masque l'onglet du menu
+          headerTitle: 'Mon Profil' 
+        }} 
+      />
+      <Tabs.Screen name="search" options={{ href: null }} />
+
+      {/* ÉCRANS VISIBLES DANS LE MENU BAS */}
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Tab One',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
-          headerRight: () => (
-            <Link href="/modal" asChild>
-              <Pressable>
-                {({ pressed }) => (
-                  <FontAwesome
-                    name="info-circle"
-                    size={25}
-                    color={Colors[colorScheme ?? 'light'].text}
-                    style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
-                  />
-                )}
-              </Pressable>
-            </Link>
-          ),
+          title: 'Jeux',
+          tabBarIcon: ({ color }) => <MaterialCommunityIcons name="gamepad-variant" size={26} color={color} />,
         }}
       />
+
       <Tabs.Screen
-        name="two"
+        name="wishlist"
         options={{
-          title: 'Tab Two',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
+          title: 'Souhaits',
+          tabBarIcon: ({ color }) => <MaterialCommunityIcons name="hand-heart-outline" size={26} color={color} />,
+        }}
+      />
+
+      <Tabs.Screen
+        name="psntrophies"
+        options={{
+          title: 'Trophées',
+          tabBarIcon: ({ color }) => <MaterialCommunityIcons name="trophy" size={26} color={color} />,
+        }}
+      />
+
+      <Tabs.Screen
+        name="stats"
+        options={{
+          title: 'Stats',
+          tabBarIcon: ({ color }) => <MaterialCommunityIcons name="chart-areaspline-variant" size={26} color={color} />,
         }}
       />
     </Tabs>

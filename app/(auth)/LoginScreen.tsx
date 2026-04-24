@@ -1,4 +1,4 @@
-import { resetPassword, signInUser, signUpUser } from '@/api/auth';
+import { resetPassword, signInUser, signInWithOAuth, signUpUser } from '@/api/auth';
 import { FontAwesome5, FontAwesome6 } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
@@ -23,6 +23,7 @@ export default function LoginScreen() {
   const [forgotEmail, setForgotEmail] = useState('');
   const [isSendingReset, setIsSendingReset] = useState(false);
 
+  // Fonction d'authentification
   const handleAuth = async () => {
     if (!email || !password || (isSignUp && !username)) {
       alert("Veuillez remplir tous les champs");
@@ -44,6 +45,7 @@ export default function LoginScreen() {
     }
   };
 
+  // Fonction de réinitialisation de mot de passe
   const handleForgotPassword = async () => {
     if (!forgotEmail) return;
     setIsSendingReset(true);
@@ -55,6 +57,18 @@ export default function LoginScreen() {
       alert(error.message);
     } finally {
       setIsSendingReset(false);
+    }
+  };
+
+  // Fonction de connexion avec un provider (Google, Discord, etc.)
+  const handleSocialLogin = async (provider: 'google' | 'discord') => {
+    try {
+      setIsLoading(true);
+      await signInWithOAuth(provider);
+    } catch (error: any) {
+      alert(error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -138,12 +152,18 @@ export default function LoginScreen() {
           <View style={styles.divider} />
         </View>
 
-        <TouchableOpacity style={[styles.button, styles.googleButton]}>
+        <TouchableOpacity 
+          style={[styles.button, styles.googleButton]} 
+          onPress={() => handleSocialLogin('google')}
+        >
           <FontAwesome5 name="google" size={18} color="black" />
           <Text style={styles.googleButtonText}>Continuer avec Google</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.button, styles.discordButton]}>
+        <TouchableOpacity 
+          style={[styles.button, styles.discordButton]}
+          onPress={() => handleSocialLogin('discord')}
+        >
           <FontAwesome6 name="discord" size={18} color="white" />
           <Text style={styles.discordButtonText}>Continuer avec Discord</Text>
         </TouchableOpacity>
