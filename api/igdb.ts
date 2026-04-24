@@ -43,7 +43,6 @@ export const searchGames = async (query: string) => {
     const token = await getAccessToken();
     
     // Définition des champs à récupérer
-    // On ajoute game_modes, engines et on précise publisher pour les entreprises
     const fields = [
       'name',
       'summary',
@@ -52,7 +51,7 @@ export const searchGames = async (query: string) => {
       'screenshots.url',
       'genres.name',
       'game_modes.name',
-      'engines.name',
+      'game_engines.name', // <--- Correction ici (game_engines au lieu de engines)
       'involved_companies.company.name',
       'involved_companies.developer',
       'involved_companies.publisher'
