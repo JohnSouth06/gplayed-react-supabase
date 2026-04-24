@@ -3,7 +3,6 @@ import { FontAwesome5, FontAwesome6 } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
-  Image,
   KeyboardAvoidingView,
   Modal,
   Platform, ScrollView,
@@ -11,6 +10,7 @@ import {
   Text, TextInput, TouchableOpacity,
   View
 } from 'react-native';
+import Logo from '../../assets/images/logo.svg';
 
 export default function LoginScreen() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -78,14 +78,14 @@ export default function LoginScreen() {
       style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Image 
-          source={require('../../assets/images/icon.png')} 
-          style={styles.logo}
-          resizeMode="contain"
+        <Logo 
+          width={240} 
+          height={60} 
+          style={styles.logo} resizeMode="contain"
         />
 
         <Text style={styles.subtitle}>
-          {isSignUp ? 'Créez votre compte' : 'Connectez-vous à votre collection'}
+          {isSignUp ? 'Créez votre compte' : 'Your Gaming Story'}
         </Text>
 
         <View style={styles.inputContainer}>

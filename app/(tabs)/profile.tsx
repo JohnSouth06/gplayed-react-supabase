@@ -1,6 +1,7 @@
-import { deleteAccount, signOutUser } from '@/api/auth';
+import { signOutUser } from '@/api/auth';
 import { supabase } from '@/lib/supabase';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { decode } from 'base64-arraybuffer'; // Assure-toi d'avoir fait : npm install base64-arraybuffer
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -17,10 +18,11 @@ import {
 export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [progress, setProgress] = useState(0); // État pour la progression (0 à 1)
   const [profile, setProfile] = useState<{ username: string; avatar_url: string | null } | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const router = useRouter();
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -47,44 +49,41 @@ export default function ProfileScreen() {
     }
   }
 
-  // Fonction pour choisir une nouvelle photo de profil et l'uploader
   const pickAndUploadAvatar = async () => {
-    // Affiche la galerie photo
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      aspect: [1, 1], // Force un format carré
+      aspect: [1, 1],
       quality: 0.5,
+      base64: true,
     });
 
-    if (result.canceled || !result.assets[0].uri || !userId) return;
+    if (result.canceled || !result.assets[0].base64 || !userId) return;
 
     setUploading(true);
+    setProgress(0.1); // Début du processus
+
     try {
       const image = result.assets[0];
-      const fileExt = image.uri.split('.').pop();
-      const filePath = `${userId}/avatar-${Math.random()}.${fileExt}`;
+      const fileExt = image.uri.split('.').pop()?.toLowerCase();
+      const filePath = `${userId}/avatar-${Date.now()}.${fileExt}`;
 
-      // Conversion de l'image pour Supabase
-      const response = await fetch(image.uri);
-      const arrayBuffer = await response.arrayBuffer();
+      setProgress(0.3); // Traitement de l'image
 
-      // 1. Envoi vers le Storage Supabase (Bucket 'avatars')
+      // Upload vers Supabase
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, arrayBuffer, {
-          contentType: image.mimeType || 'image/jpeg',
+        .upload(filePath, decode(image.base64), {
+          contentType: `image/${fileExt}`,
           upsert: true
         });
 
       if (uploadError) throw uploadError;
+      setProgress(0.7); // Upload réussi
 
-      // 2. Récupération de l'URL publique
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
+      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
 
-      // 3. Mise à jour du profil dans la table 'profiles'
+      // Mise à jour de la base de données
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: publicUrl })
@@ -92,35 +91,52 @@ export default function ProfileScreen() {
 
       if (updateError) throw updateError;
 
-      // Mise à jour de l'affichage local
-      setProfile(prev => prev ? { ...prev, avatar_url: publicUrl } : null);
-      Alert.alert("Succès", "Photo de profil mise à jour !");
+      setProgress(1); // Terminé
+      
+      // On ajoute un timestamp à l'URL pour forcer React Native à rafraîchir l'image (Cache busting)
+      const finalUrl = `${publicUrl}?t=${new Date().getTime()}`;
+      setProfile(prev => prev ? { ...prev, avatar_url: finalUrl } : null);
+      
+      setTimeout(() => {
+        setUploading(false);
+        setProgress(0);
+      }, 500);
 
     } catch (e: any) {
-      Alert.alert("Erreur d'upload", e.message);
-    } finally {
+      Alert.alert("Erreur", e.message);
       setUploading(false);
     }
   };
 
-  const confirmDelete = () => {
-    Alert.alert(
-      "Supprimer le compte",
-      "Cette action est irréversible. Toutes vos données seront effacées.",
-      [
-        { text: "Annuler", style: "cancel" },
-        { text: "Supprimer", style: "destructive", onPress: async () => {
-            try {
-              await deleteAccount();
-              router.replace('/(auth)/LoginScreen');
-            } catch (e: any) { alert(e.message); }
-          }
-        }
-      ]
-    );
-  };
-
   if (loading) return <View style={styles.centered}><ActivityIndicator color="#4CE5AE" /></View>;
+
+  const confirmDelete = () => {
+      Alert.alert(
+        "Supprimer le compte",
+        "Attention : Cette action est irréversible. Toutes vos données de collection seront effacées définitivement.",
+        [
+          { 
+            text: "Annuler", 
+            style: "cancel" 
+          },
+          { 
+            text: "Supprimer définitivement", 
+            style: "destructive", 
+            onPress: async () => {
+              try {
+                setLoading(true);
+                await deleteAccount(); // Appel à la fonction API que nous avons créée
+                // La redirection vers le login se fera automatiquement via le layout
+              } catch (e: any) {
+                Alert.alert("Erreur lors de la suppression", e.message);
+              } finally {
+                setLoading(false);
+              }
+            } 
+          }
+        ]
+      );
+    };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -128,15 +144,35 @@ export default function ProfileScreen() {
         <TouchableOpacity onPress={pickAndUploadAvatar} disabled={uploading}>
           <View style={styles.avatarWrapper}>
             {profile?.avatar_url ? (
-              <Image source={{ uri: profile.avatar_url }} style={styles.avatarImage} />
+              <Image 
+                source={{ uri: profile.avatar_url }} 
+                style={styles.avatarImage} 
+                key={profile.avatar_url} 
+              />
             ) : (
               <Text style={styles.avatarLetter}>{profile?.username?.charAt(0).toUpperCase()}</Text>
             )}
+            
+            {/* Overlay de chargement sur l'avatar */}
+            {uploading && (
+              <View style={styles.uploadOverlay}>
+                <ActivityIndicator color="#4CE5AE" />
+              </View>
+            )}
+
             <View style={styles.editBadge}>
-              {uploading ? <ActivityIndicator size="small" color="#000" /> : <MaterialCommunityIcons name="pencil" size={14} color="black" />}
+              <MaterialCommunityIcons name="pencil" size={14} color="black" />
             </View>
           </View>
         </TouchableOpacity>
+
+        {/* Barre de progression sous l'avatar */}
+        {uploading && (
+          <View style={styles.progressContainer}>
+            <View style={[styles.progressBar, { width: `${progress * 100}%` }]} />
+          </View>
+        )}
+        
         <Text style={styles.username}>{profile?.username}</Text>
       </View>
 
@@ -157,12 +193,12 @@ export default function ProfileScreen() {
         <View style={styles.menuItem}>
           <MaterialCommunityIcons name="bell-outline" size={22} color="#6c7d76" />
           <Text style={styles.menuText}>Notifications Push</Text>
-          <Switch 
-            value={notificationsEnabled} 
-            onValueChange={setNotificationsEnabled}
-            trackColor={{ false: "#333", true: "#4CE5AE" }}
-            thumbColor={notificationsEnabled ? "#fff" : "#888"}
-          />
+           <Switch 
+              value={notificationsEnabled} // Utilise la variable locale
+              onValueChange={setNotificationsEnabled}
+              trackColor={{ false: "#333", true: "#4CE5AE" }}
+              thumbColor={notificationsEnabled ? "#fff" : "#888"}
+            />
         </View>
       </View>
 
