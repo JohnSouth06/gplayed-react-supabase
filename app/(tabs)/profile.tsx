@@ -19,8 +19,8 @@ import {
 
 // ─── Design Tokens (partagés avec index.tsx) ────────────────────────────────
 const C = {
-  bg: '#272727',
-  surface: '#2F2F2F',
+  bg: '#1e1e1e',
+  surface: '#272727',
   surfaceHigh: '#383838',
   border: '#3D3D3D',
   primary: '#4CE5AE',
