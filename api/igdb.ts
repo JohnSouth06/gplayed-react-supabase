@@ -43,7 +43,6 @@ export const searchGames = async (query: string) => {
     const token = await getAccessToken();
     
     // Définition des champs à récupérer
-    // On ajoute game_modes, engines et on précise publisher pour les entreprises
     const fields = [
       'name',
       'summary',
@@ -51,14 +50,16 @@ export const searchGames = async (query: string) => {
       'cover.url',
       'screenshots.url',
       'genres.name',
+      'platforms.name',
+      'version_parent',
       'game_modes.name',
-      'engines.name',
+      'game_engines.name',
       'involved_companies.company.name',
       'involved_companies.developer',
       'involved_companies.publisher'
     ].join(', ');
 
-    const body = `search "${query}"; fields ${fields}; limit 10;`;
+    const body = `search "${query}"; fields ${fields}; platforms.name; limit 10;`;
 
     const response = await fetch('https://api.igdb.com/v4/games', {
       method: 'POST',
