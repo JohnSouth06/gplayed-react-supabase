@@ -40,6 +40,7 @@ const C = {
   redDim: 'rgba(255,76,76,0.12)',
   blue: '#4C9EFF',
   yellow: '#FFD34C',
+  grey: '#a3bfb4',
 };
 
 // Options de tri
@@ -198,7 +199,7 @@ export default function DashboardScreen() {
       case 'Terminé': return C.blue;
       case 'Platiné - 100%': return C.yellow;
       case 'Abandonné': return C.red;
-      default: return C.textMuted;
+      default: return C.grey;
     }
   };
 
@@ -328,7 +329,7 @@ export default function DashboardScreen() {
               <>
                 {/* Header avec blur */}
                 <View style={styles.detailHeader}>
-                  <Image source={{ uri: selectedGame.cover_url }} style={styles.detailBlurImage} blurRadius={18} />
+                  <Image source={{ uri: selectedGame.cover_url }} style={styles.detailBlurImage} blurRadius={3} />
                   <View style={styles.detailHeaderDim} />
                   <View style={styles.detailHeaderContent}>
                     <Image source={{ uri: selectedGame.cover_url }} style={styles.detailMainCover} />

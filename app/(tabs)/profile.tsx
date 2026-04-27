@@ -150,6 +150,7 @@ const pickAndUploadAvatar = async () => {
 
   const initials = profile?.username?.charAt(0).toUpperCase() ?? '?';
 
+
   return (
     <ScrollView
       style={styles.container}
