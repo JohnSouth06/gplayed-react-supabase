@@ -1,0 +1,1322 @@
+import { searchGames } from '@/api/igdb';
+import { supabase } from '@/lib/supabase';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import React, { useEffect, useState } from 'react';
+
+import {
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  FlatList,
+  Image,
+  Modal,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
+
+const { width, height } = Dimensions.get('window');
+const COLUMN_WIDTH = (width - 60) / 2;
+
+// ─── Design Tokens ──────────────────────────────────────────────────────────
+const C = {
+  bg: '#1e1e1e',
+  surface: '#272727',
+  surfaceHigh: '#2e2e2e',
+  border: '#3D3D3D',
+  borderAccent: '#4CE5AE22',
+  primary: '#4CE5AE',
+  primaryDim: 'rgba(76,229,174,0.12)',
+  primaryGlow: 'rgba(76,229,174,0.25)',
+  textPrimary: '#F0F0F0',
+  textSecondary: '#7A8C86',
+  textMuted: '#677a73',
+  red: '#FF4C4C',
+  redDim: 'rgba(255,76,76,0.12)',
+  blue: '#4C9EFF',
+  yellow: '#FFD34C',
+  grey: '#a3bfb4',
+};
+
+// Options de tri
+const SORT_OPTIONS = [
+  { id: 'recent', label: 'Ajouts récents', icon: 'clock-outline' },
+  { id: 'title', label: 'Nom (A-Z)', icon: 'sort-alphabetical-variant' },
+  { id: 'rating', label: 'Note IGDB', icon: 'star-outline' },
+  { id: 'playtime', label: 'Temps de jeu', icon: 'timer-outline' },
+];
+
+export default function DashboardScreen() {
+  const [username, setUsername] = useState<string | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [sortModalVisible, setSortModalVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [results, setResults] = useState<any[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [myGames, setMyGames] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [activeFormat, setActiveFormat] = useState<'Physique' | 'Numérique'>('Physique');
+  const [sortBy, setSortBy] = useState<'recent' | 'title' | 'rating' | 'playtime'>('recent');
+  const [collectionSearchQuery, setCollectionSearchQuery] = useState('');
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [selectedGame, setSelectedGame] = useState<any>(null);
+  const [detailTab, setDetailTab] = useState<'manage' | 'info'>('manage');
+  const [viewerVisible, setViewerVisible] = useState(false);
+  const [viewerImage, setViewerImage] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchGames();
+  }, []);
+
+  const fetchGames = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data, error } = await supabase.from('games').select('*').eq('user_id', user.id);
+      if (error) throw error;
+      setMyGames(data || []);
+
+      const { data: profileData } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('id', user.id)
+      .maybeSingle();
+    
+    if (profileData) setUsername(profileData.username);
+
+    } catch (e: any) {
+      console.error(e.message);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const getProcessedGames = () => {
+    let filtered = myGames.filter(game =>
+      game.format === activeFormat &&
+      game.title.toLowerCase().includes(collectionSearchQuery.toLowerCase())
+    );
+    switch (sortBy) {
+      case 'title': return filtered.sort((a, b) => a.title.localeCompare(b.title));
+      case 'rating': return filtered.sort((a, b) => (b.rating_igdb || 0) - (a.rating_igdb || 0));
+      case 'playtime': return filtered.sort((a, b) => (b.playtime || 0) - (a.playtime || 0));
+      default: return filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }
+  };
+
+  const updateGameField = async (field: string, value: any) => {
+    try {
+      const { error } = await supabase.from('games').update({ [field]: value }).eq('id', selectedGame.id);
+      if (error) throw error;
+      setSelectedGame({ ...selectedGame, [field]: value });
+      setMyGames(myGames.map(g => g.id === selectedGame.id ? { ...g, [field]: value } : g));
+    } catch (e: any) {
+      Alert.alert("Erreur", e.message);
+    }
+  };
+
+  const deleteGame = () => {
+    Alert.alert(
+      "Supprimer ce jeu ?",
+      "Voulez-vous vraiment retirer ce titre de votre collection ?",
+      [
+        { text: "Annuler", style: "cancel" },
+        {
+          text: "Supprimer", style: "destructive",
+          onPress: async () => {
+            await supabase.from('games').delete().eq('id', selectedGame.id);
+            setDetailModalVisible(false);
+            fetchGames();
+          }
+        }
+      ]
+    );
+  };
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    setSearching(true);
+    try {
+      const data = await searchGames(searchQuery);
+      if (Array.isArray(data)) {
+        const sorted = data.sort((a, b) => {
+          if (a.version_parent === null && b.version_parent !== null) return -1;
+          if (a.version_parent !== null && b.version_parent === null) return 1;
+          return 0;
+        });
+        const flattened: any[] = [];
+        sorted.forEach(game => {
+          if (game.platforms && game.platforms.length > 0) {
+            game.platforms.forEach((p: any) => {
+              flattened.push({ ...game, selectedPlatform: p.name, uniqueSearchId: `${game.id}-${p.id}` });
+            });
+          } else {
+            flattened.push({ ...game, selectedPlatform: 'PC', uniqueSearchId: game.id.toString() });
+          }
+        });
+        setResults(flattened);
+      } else {
+        setResults([]);
+      }
+    } catch (e) {
+      setResults([]);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const addGameToCollection = async (game: any) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Utilisateur non authentifié");
+      const newGame = {
+        user_id: user.id,
+        igdb_id: game.id,
+        title: game.name,
+        description: game.summary,
+        rating_igdb: game.total_rating,
+        cover_url: game.cover?.url ? `https:${game.cover.url.replace('t_thumb', 't_cover_big')}` : null,
+        genres: game.genres?.map((g: any) => g.name) || [],
+        platform: game.selectedPlatform,
+        platforms_list: game.platforms?.map((p: any) => p.name) || [],
+        game_modes: game.game_modes?.map((m: any) => m.name) || [],
+        screenshots: game.screenshots?.map((s: any) => `https:${s.url.replace('t_thumb', 't_1080p')}`) || [],
+        developer: game.involved_companies?.find((c: any) => c.developer)?.company.name || null,
+        publisher: game.involved_companies?.find((c: any) => c.publisher)?.company.name || null,
+        engine: game.game_engines?.[0]?.name || null,
+        format: activeFormat,
+        status: 'A faire',
+        playtime: 0
+      };
+      const { error } = await supabase.from('games').upsert(newGame, { onConflict: 'user_id, igdb_id, platform' });
+      if (error) throw error;
+      setModalVisible(false);
+      setSearchQuery('');
+      fetchGames();
+    } catch (error: any) {
+      alert(error.message);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'En cours': return C.primary;
+      case 'Terminé': return C.blue;
+      case 'Platiné - 100%': return C.yellow;
+      case 'Abandonné': return C.red;
+      default: return C.grey;
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'En cours': return 'play-circle';
+      case 'Terminé': return 'check-circle';
+      case 'Platiné - 100%': return 'trophy';
+      case 'Abandonné': return 'close-circle';
+      default: return 'circle-outline';
+    }
+  };
+
+  const processedGames = getProcessedGames();
+
+  return (
+    <View style={styles.container}>
+
+      {/* ─── GRILLE DE JEUX ───────────────────────────────────── */}
+      <FlatList
+        data={processedGames}
+        numColumns={2}
+        keyExtractor={(item) => item.id}
+        columnWrapperStyle={styles.row}
+        contentContainerStyle={styles.listContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchGames} tintColor={C.primary} />}
+        
+        // On déplace l'en-tête ici pour qu'il défile avec la liste
+        ListHeaderComponent={
+          <View>
+            {/* ─── HEADER ───────────────────────────────────────────── */}
+            <View style={styles.headerRow}>
+              <View>
+                <View style={styles.headerTitleRow}>
+                    <Text style={styles.title}>
+                      {username ? ( <> Bonjour <Text style={styles.usernameHighlight}>{username}</Text> </> ) : ( 'Ma Collection' )}
+                    </Text>
+                </View>
+                <Text style={styles.count}>
+                  <Text style={styles.countNum}>{processedGames.length}</Text>
+                  {' '}jeux {activeFormat.toLowerCase()}s
+                </Text>
+              </View>
+            </View>
+
+            {/* ─── TABS FORMAT ──────────────────────────────────────── */}
+            <View style={styles.tabsContainer}>
+              {(['Physique', 'Numérique'] as const).map((format) => (
+                <TouchableOpacity
+                  key={format}
+                  style={[styles.tab, activeFormat === format && styles.activeTab]}
+                  onPress={() => { setActiveFormat(format); setCollectionSearchQuery(''); }}
+                >
+                  <MaterialCommunityIcons
+                    name={format === 'Physique' ? 'disc' : 'cloud-download-outline'}
+                    size={17}
+                    color={activeFormat === format ? C.bg : C.textSecondary}
+                  />
+                  <Text style={[styles.tabText, activeFormat === format && styles.activeTabText]}>
+                    {format}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* ─── BARRE DE RECHERCHE INTERNE ────────────────────────── */}
+            <View style={styles.searchRow}>
+              <View style={styles.collectionSearchContainer}>
+                <MaterialCommunityIcons name="magnify" size={18} color={C.textSecondary} />
+                <TextInput
+                  style={styles.collectionSearchInput}
+                  placeholder="Rechercher..."
+                  placeholderTextColor={C.textMuted}
+                  value={collectionSearchQuery}
+                  onChangeText={setCollectionSearchQuery}
+                  clearButtonMode="while-editing"
+                />
+                {collectionSearchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => setCollectionSearchQuery('')}>
+                    <MaterialCommunityIcons name="close-circle" size={16} color={C.textMuted} />
+                  </TouchableOpacity>
+                )}
+              </View>
+              
+              <TouchableOpacity style={styles.sortButton} onPress={() => setSortModalVisible(true)}>
+                <MaterialCommunityIcons name="sort-variant" size={22} color={C.primary} />
+              </TouchableOpacity>
+            </View>
+          </View>
+        }
+
+        renderItem={({ item }) => {
+          const statusColor = getStatusColor(item.status);
+          return (
+            <TouchableOpacity
+              style={[styles.card]}
+              onPress={() => { setSelectedGame(item); setDetailModalVisible(true); setDetailTab('manage'); }}
+              activeOpacity={0.8}
+            >
+              <View style={styles.cardImageWrapper}>
+                <Image source={{ uri: item.cover_url }} style={styles.cardCover} resizeMode="cover" />
+                <LinearGradient
+                  colors={['transparent', 'rgba(39,39,39,0.55)', 'rgba(39,39,39,0.92)']}
+                  style={styles.cardImageOverlay}
+                />
+              </View>
+              <View style={[styles.statusBadge, { backgroundColor: `${statusColor}30`, borderColor: `${statusColor}55` }]}>
+                <MaterialCommunityIcons name={getStatusIcon(item.status) as any} size={12} color={statusColor} />
+                <Text style={[styles.statusText, { color: statusColor }]}>{item.status}</Text>
+              </View>
+              <View style={styles.cardInfo}>
+                <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
+                <Text style={styles.cardPlatform}>{item.platform}</Text>
+              </View>
+            </TouchableOpacity>
+          );
+        }}
+        ListEmptyComponent={
+          !loading ? (
+            <View style={styles.emptyState}>
+              <MaterialCommunityIcons name="controller-off" size={48} color={C.textMuted} />
+              <Text style={styles.emptyTitle}>Aucun jeu ici</Text>
+              <Text style={styles.emptySubtitle}>Appuyez sur + pour ajouter un titre</Text>
+            </View>
+          ) : null
+        }
+      />
+
+      {/* ─── MODALE DÉTAIL ────────────────────────────────────── */}
+      <Modal visible={detailModalVisible} animationType="slide" transparent>
+        <View style={styles.detailModalOverlay}>
+          <View style={styles.detailModalContent}>
+            {selectedGame && (
+              <>
+                <View style={styles.detailHeader}>
+                  <Image source={{ uri: selectedGame.cover_url }} style={styles.detailBlurImage} blurRadius={3} />
+                  <View style={styles.detailHeaderDim} />
+                  <View style={styles.detailHeaderContent}>
+                    <Image source={{ uri: selectedGame.cover_url }} style={styles.detailMainCover} />
+                    <View style={styles.detailTitleBox}>
+                      <Text style={styles.detailTitle} numberOfLines={2}>{selectedGame.title}</Text>
+                      <View style={styles.detailPlatformRow}>
+                        <MaterialCommunityIcons name="gamepad-variant-outline" size={13} color={C.primary} />
+                        <Text style={styles.detailDev}>
+                          {selectedGame.platform} · {selectedGame.developer || "Studio inconnu"}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                  <TouchableOpacity style={styles.closeDetailBtn} onPress={() => setDetailModalVisible(false)}>
+                    <MaterialCommunityIcons name="close" size={20} color={C.textPrimary} />
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.detailSubTabs}>
+                  {(['manage', 'info'] as const).map((tab) => (
+                    <TouchableOpacity
+                      key={tab}
+                      style={[styles.subTab, detailTab === tab && styles.activeSubTab]}
+                      onPress={() => setDetailTab(tab)}
+                    >
+                      <MaterialCommunityIcons
+                        name={tab === 'manage' ? 'tune-variant' : 'information-outline'}
+                        size={15}
+                        color={detailTab === tab ? C.primary : C.textSecondary}
+                      />
+                      <Text style={[styles.subTabText, detailTab === tab && styles.activeSubTabText]}>
+                        {tab === 'manage' ? 'GÉRER' : 'INFOS'}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <ScrollView style={styles.detailScroll} showsVerticalScrollIndicator={false}>
+                  {detailTab === 'manage' ? (
+                    <View style={styles.manageContainer}>
+                      <Text style={styles.sectionTitle}>Format</Text>
+                      <View style={styles.formatToggle}>
+                        {(['Physique', 'Numérique'] as const).map((f) => (
+                          <TouchableOpacity
+                            key={f}
+                            style={[styles.formatBtn, selectedGame.format === f && styles.activeFormatBtn]}
+                            onPress={() => updateGameField('format', f)}
+                          >
+                            <MaterialCommunityIcons
+                              name={f === 'Physique' ? 'disc' : 'cloud-download-outline'}
+                              size={14}
+                              color={selectedGame.format === f ? C.bg : C.textSecondary}
+                            />
+                            <Text style={[styles.formatBtnText, selectedGame.format === f && styles.activeFormatBtnText]}>
+                              {f}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+
+                      <Text style={styles.sectionTitle}>Plateforme</Text>
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.pillScroll}>
+                      {[...(selectedGame.platforms_list || [])]
+                        .sort((a, b) => (a === selectedGame.platform ? -1 : b === selectedGame.platform ? 1 : 0))
+                        .map((p: string) => (
+                          <TouchableOpacity
+                            key={p}
+                            style={[styles.pill, selectedGame.platform === p && styles.activePill]}
+                            onPress={() => updateGameField('platform', p)}
+                          >
+                            <Text style={[styles.pillText, selectedGame.platform === p && styles.activePillText]}>
+                              {p}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+
+                      <Text style={styles.sectionTitle}>Statut</Text>
+                      <View style={styles.statusGrid}>
+                        {['A faire', 'En cours', 'Terminé', 'Platiné - 100%', 'Abandonné'].map((s) => {
+                          const sColor = getStatusColor(s);
+                          const isActive = selectedGame.status === s;
+                          return (
+                            <TouchableOpacity
+                              key={s}
+                              style={[
+                                styles.statusOption,
+                                { borderColor: isActive ? sColor : C.border },
+                                isActive && { backgroundColor: `${sColor}18` }
+                              ]}
+                              onPress={() => updateGameField('status', s)}
+                            >
+                              <MaterialCommunityIcons
+                                name={getStatusIcon(s) as any}
+                                size={14}
+                                color={isActive ? sColor : C.textSecondary}
+                              />
+                              <Text style={[styles.statusOptionText, isActive && { color: sColor }]}>{s}</Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+
+                      <Text style={styles.sectionTitle}>Temps de jeu</Text>
+                      <View style={styles.playtimeRow}>
+                        <MaterialCommunityIcons name="timer-outline" size={22} color={C.primary} />
+                        <TextInput
+                          style={styles.playtimeInput}
+                          keyboardType="numeric"
+                          value={selectedGame.playtime?.toString()}
+                          onChangeText={(v) => updateGameField('playtime', parseInt(v) || 0)}
+                          placeholderTextColor={C.textMuted}
+                        />
+                        <Text style={styles.playtimeLabel}>min</Text>
+                      </View>
+
+                      <TouchableOpacity style={styles.deleteBtn} onPress={deleteGame}>
+                        <MaterialCommunityIcons name="trash-can-outline" size={18} color={C.red} />
+                        <Text style={styles.deleteBtnText}>Supprimer de la collection</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <View style={styles.infoContainer}>
+                      <Text style={styles.sectionTitle}>Description</Text>
+                      <Text style={styles.descriptionText}>
+                        {selectedGame.description || "Aucune description disponible."}
+                      </Text>
+                      <Text style={styles.sectionTitle}>Détails techniques</Text>
+                      <View style={styles.techGrid}>
+                        <DetailRow label="Éditeur" value={selectedGame.publisher} />
+                        <DetailRow label="Développeur" value={selectedGame.developer} />
+                        <DetailRow label="Moteur" value={selectedGame.engine} />
+                        <DetailRow label="Genres" value={selectedGame.genres?.join(', ')} />
+                        <DetailRow
+                          label="Note IGDB"
+                          value={selectedGame.rating_igdb ? `${Math.round(selectedGame.rating_igdb)}%` : null}
+                          highlight
+                        />
+                      </View>
+
+                      {selectedGame.screenshots?.length > 0 && (
+                        <>
+                          <Text style={styles.sectionTitle}>Captures d'écran</Text>
+                          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.screenshotScroll}>
+                            {selectedGame.screenshots.map((url: string, index: number) => (
+                              <TouchableOpacity
+                                key={index}
+                                activeOpacity={0.85}
+                                onPress={() => { setViewerImage(url); setViewerVisible(true); }}
+                              >
+                                <Image source={{ uri: url }} style={styles.screenshotImg} />
+                              </TouchableOpacity>
+                            ))}
+                          </ScrollView>
+                        </>
+                      )}
+                    </View>
+                  )}
+                </ScrollView>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* ─── MODALE DE TRI ────────────────────────────────────── */}
+      <Modal visible={sortModalVisible} transparent animationType="fade">
+        <TouchableOpacity style={styles.modalOverlay} onPress={() => setSortModalVisible(false)} activeOpacity={1}>
+          <View style={styles.sortModalContent}>
+            <View style={styles.sortModalHandle} />
+            <Text style={styles.modalTitle}>Trier par</Text>
+            {SORT_OPTIONS.map((option) => (
+              <TouchableOpacity
+                key={option.id}
+                style={[styles.sortOption, sortBy === option.id && styles.activeSortOption]}
+                onPress={() => { setSortBy(option.id as any); setSortModalVisible(false); }}
+              >
+                <View style={[styles.sortIconWrap, sortBy === option.id && styles.sortIconWrapActive]}>
+                  <MaterialCommunityIcons name={option.icon as any} size={18} color={sortBy === option.id ? C.bg : C.textSecondary} />
+                </View>
+                <Text style={[styles.sortOptionText, sortBy === option.id && styles.activeSortOptionText]}>
+                  {option.label}
+                </Text>
+                {sortBy === option.id && (
+                  <MaterialCommunityIcons name="check" size={16} color={C.primary} style={{ marginLeft: 'auto' }} />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* ─── MODALE DE RECHERCHE ──────────────────────────────── */}
+      <Modal visible={modalVisible} animationType="slide" transparent>
+        <View style={styles.modalSearchContainer}>
+          <View style={styles.modalSearchContent}>
+            <View style={styles.searchModalHandle} />
+            <View style={styles.searchHeader}>
+              <View style={styles.searchInputWrapper}>
+                <MaterialCommunityIcons name="magnify" size={18} color={C.textSecondary} style={{ marginRight: 10 }} />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Rechercher sur IGDB..."
+                  placeholderTextColor={C.textMuted}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  onSubmitEditing={handleSearch}
+                  autoFocus
+                />
+              </View>
+              <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeSearchBtn}>
+                <Text style={styles.closeText}>Fermer</Text>
+              </TouchableOpacity>
+            </View>
+            {searching ? (
+              <ActivityIndicator color={C.primary} style={{ marginTop: 30 }} />
+            ) : (
+              <FlatList
+                data={results}
+                keyExtractor={(item) => item.uniqueSearchId}
+                renderItem={({ item }) => (
+                  <TouchableOpacity style={styles.searchItem} onPress={() => addGameToCollection(item)}>
+                    <Image
+                      source={item.cover?.url ? { uri: `https:${item.cover.url}` } : require('../../assets/images/icon.png')}
+                      style={styles.searchThumbnail}
+                    />
+                    <View style={{ flex: 1, marginLeft: 14 }}>
+                      <Text style={styles.searchTitle} numberOfLines={1}>{item.name}</Text>
+                      <Text style={styles.searchPlatform}>{item.selectedPlatform}</Text>
+                    </View>
+                    <View style={styles.addBtn}>
+                      <MaterialCommunityIcons name="plus" size={18} color={C.bg} />
+                    </View>
+                  </TouchableOpacity>
+                )}
+              />
+            )}
+            
+          </View>
+        </View>
+      </Modal>
+
+      {/* ─── MODALE VISIONNEUSE D'IMAGE ──────────────────────── */}
+      <Modal visible={viewerVisible} transparent animationType="fade" statusBarTranslucent>
+        <View style={styles.viewerOverlay}>
+          <TouchableOpacity
+            style={styles.viewerCloseBtn}
+            onPress={() => setViewerVisible(false)}
+            activeOpacity={0.8}
+          >
+            <MaterialCommunityIcons name="close" size={22} color={C.textPrimary} />
+          </TouchableOpacity>
+          {viewerImage && (
+            <Image
+              source={{ uri: viewerImage }}
+              style={styles.viewerImage}
+              resizeMode="contain"
+            />
+          )}
+        </View>
+      </Modal>
+
+      {/* ─── FAB ──────────────────────────────────────────────── */}
+      <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)} activeOpacity={0.85}>
+        <MaterialCommunityIcons name="plus" size={28} color={C.bg} />
+      </TouchableOpacity>
+
+    </View>
+  );
+}
+
+// ─── Composant DetailRow ─────────────────────────────────────────────────────
+const DetailRow = ({ label, value, highlight }: { label: string; value: any; highlight?: boolean }) => {
+  if (!value) return null;
+  return (
+    <View style={styles.detailRow}>
+      <Text style={styles.detailLabel}>{label}</Text>
+      <Text style={[styles.detailValue, highlight && { color: C.primary, fontWeight: '700' }]}>{value}</Text>
+    </View>
+  );
+};
+
+// ─── Styles ──────────────────────────────────────────────────────────────────
+const styles = StyleSheet.create({
+  // LAYOUT
+  container: {
+    flex: 1,
+    backgroundColor: C.bg,
+    paddingHorizontal: 20,
+  },
+
+  // HEADER
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 30,
+    marginBottom: 22,
+  },
+  headerTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: '400',
+    color: C.textPrimary,
+    letterSpacing: 0.5,
+  },
+  usernameHighlight: {
+    color: C.primary,
+    fontWeight: '600',
+  },
+  count: {
+    color: C.textSecondary,
+    fontSize: 13,
+    fontWeight: '500',
+    marginTop: 10,
+    marginLeft: 6,
+  },
+  countNum: {
+    color: C.primary,
+    fontWeight: '600',
+  },
+  sortButton: {
+    backgroundColor: C.surface,
+    padding: 11,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: C.border,
+  },
+
+  // TABS
+  tabsContainer: {
+    flexDirection: 'row',
+    backgroundColor: C.surface,
+    borderRadius: 14,
+    padding: 4,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: C.border,
+  },
+  tab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 11,
+    borderRadius: 11,
+    gap: 7,
+  },
+  activeTab: {
+    backgroundColor: C.primary,
+    shadowColor: C.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  tabText: {
+    color: C.textSecondary,
+    fontWeight: '700',
+    fontSize: 13,
+    letterSpacing: 0.3,
+  },
+  activeTabText: {
+    color: C.bg,
+  },
+
+  // SEARCH BAR
+  collectionSearchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: C.surface,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    marginBottom: 18,
+    height: 44,
+    borderWidth: 1,
+    borderColor: C.border,
+  },
+  collectionSearchInput: {
+    flex: 1,
+    color: C.textPrimary,
+    fontSize: 14,
+    marginLeft: 10,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 18,
+  },
+
+  collectionSearchContainer: {
+    flex: 1, 
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: C.surface,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    height: 44,
+    borderWidth: 1,
+    borderColor: C.border,
+  },
+
+  sortButton: {
+    backgroundColor: C.surface,
+    padding: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: C.border,
+    height: 44,
+    width: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  // GRID
+  listContent: { paddingBottom: 110 },
+  row: { justifyContent: 'space-between' },
+
+  // CARD
+  card: {
+    width: COLUMN_WIDTH,
+    backgroundColor: C.surface,
+    borderRadius: 16,
+    marginBottom: 18,
+    overflow: 'hidden',
+  },
+  cardImageWrapper: {
+    position: 'relative',
+  },
+  cardCover: {
+    width: '100%',
+    height: COLUMN_WIDTH * 1.4,
+  },
+  cardImageOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 70,
+  },
+  cardInfo: {
+    padding: 11,
+    paddingTop: 9,
+  },
+  cardTitle: {
+    color: C.textPrimary,
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  cardPlatform: {
+    color: C.textSecondary,
+    fontSize: 10,
+    marginTop: 3,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  statusBadge: {
+    position: 'absolute',
+    top: 9,
+    right: 9,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  statusText: {
+    fontSize: 9,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
+
+  // EMPTY STATE
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 80,
+    gap: 12,
+  },
+  emptyTitle: {
+    color: C.textSecondary,
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  emptySubtitle: {
+    color: C.textMuted,
+    fontSize: 13,
+  },
+
+  // FAB
+  fab: {
+    position: 'absolute',
+    bottom: 32,
+    right: 24,
+    backgroundColor: C.primary,
+    width: 60,
+    height: 60,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 10,
+    shadowColor: C.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 14,
+  },
+
+  // DETAIL MODAL
+  detailModalOverlay: {
+    flex: 1,
+    backgroundColor: C.bg,
+  },
+  detailModalContent: { flex: 1 },
+  detailHeader: {
+    height: height * 0.34,
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
+  },
+  detailBlurImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
+    opacity: 0.45,
+  },
+  detailHeaderDim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(39,39,39,0.55)',
+  },
+  detailHeaderContent: {
+    flexDirection: 'row',
+    padding: 20,
+    alignItems: 'flex-end',
+    gap: 16,
+  },
+  detailMainCover: {
+    width: 105,
+    height: 148,
+    borderRadius: 12,
+    elevation: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
+  },
+  detailTitleBox: { flex: 1, paddingBottom: 4 },
+  detailTitle: {
+    color: C.textPrimary,
+    fontSize: 21,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+    textShadowColor: 'rgba(0,0,0,0.9)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 8,
+  },
+  detailPlatformRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 7,
+  },
+  detailDev: {
+    color: C.primary,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  closeDetailBtn: {
+    position: 'absolute',
+    top: 52,
+    right: 18,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    padding: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: C.border,
+  },
+
+  // DETAIL SUBTABS
+  detailSubTabs: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
+    backgroundColor: C.bg,
+  },
+  subTab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    gap: 7,
+  },
+  activeSubTab: {
+    borderBottomWidth: 2,
+    borderBottomColor: C.primary,
+  },
+  subTabText: {
+    color: C.textSecondary,
+    fontWeight: '700',
+    fontSize: 12,
+    letterSpacing: 1.2,
+  },
+  activeSubTabText: {
+    color: C.primary,
+  },
+  detailScroll: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  sectionTitle: {
+    color: C.primary,
+    fontSize: 10,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    marginBottom: 12,
+    marginTop: 8,
+    letterSpacing: 2,
+  },
+
+  // MANAGE TAB
+  manageContainer: { paddingBottom: 50 },
+  formatToggle: {
+    flexDirection: 'row',
+    backgroundColor: C.surface,
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 22,
+    borderWidth: 1,
+    borderColor: C.border,
+  },
+  formatBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 9,
+    gap: 6,
+  },
+  activeFormatBtn: {
+    backgroundColor: C.primary,
+  },
+  formatBtnText: {
+    color: C.textSecondary,
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  activeFormatBtnText: {
+    color: C.bg,
+  },
+  pillScroll: {
+    flexDirection: 'row',
+    marginBottom: 22,
+  },
+  pill: {
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: C.border,
+    marginRight: 8,
+    backgroundColor: C.surface,
+  },
+  activePill: {
+    borderColor: C.primary,
+    backgroundColor: C.primaryDim,
+  },
+  pillText: {
+    color: C.textSecondary,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  activePillText: {
+    color: C.primary,
+    fontWeight: '700',
+  },
+  statusGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 9,
+    marginBottom: 24,
+  },
+  statusOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: C.border,
+    backgroundColor: C.surface,
+  },
+  statusOptionText: {
+    color: C.textSecondary,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  playtimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: C.surface,
+    padding: 14,
+    borderRadius: 14,
+    gap: 14,
+    marginBottom: 28,
+    borderWidth: 1,
+    borderColor: C.border,
+  },
+  playtimeInput: {
+    flex: 1,
+    color: C.textPrimary,
+    fontSize: 20,
+    fontWeight: '600',
+  },
+  playtimeLabel: {
+    color: C.textSecondary,
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  deleteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    padding: 15,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: `${C.red}44`,
+    backgroundColor: C.redDim,
+  },
+  deleteBtnText: {
+    color: C.red,
+    fontWeight: '700',
+    fontSize: 14,
+  },
+
+  // INFO TAB
+  infoContainer: { paddingBottom: 50 },
+  descriptionText: {
+    color: '#BBBBBB',
+    fontSize: 14,
+    lineHeight: 23,
+    marginBottom: 28,
+  },
+  techGrid: {
+    backgroundColor: C.surface,
+    padding: 18,
+    borderRadius: 16,
+    marginBottom: 28,
+    borderWidth: 1,
+    borderColor: C.border,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 9,
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
+  },
+  detailLabel: {
+    color: C.textSecondary,
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  detailValue: {
+    color: C.textPrimary,
+    fontSize: 13,
+    fontWeight: '600',
+    flex: 1,
+    textAlign: 'right',
+    marginLeft: 20,
+  },
+  screenshotScroll: { marginTop: 4, marginBottom: 20 },
+  screenshotImg: {
+    width: 290,
+    height: 163,
+    borderRadius: 14,
+    marginRight: 14,
+    backgroundColor: C.surface,
+  },
+
+  // IMAGE VIEWER
+  viewerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  viewerImage: {
+    width: width,
+    height: height * 0.75,
+  },
+  viewerCloseBtn: {
+    position: 'absolute',
+    top: 52,
+    right: 18,
+    zIndex: 10,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    padding: 9,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: C.border,
+  },
+
+  // SORT MODAL
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.72)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sortModalContent: {
+    backgroundColor: C.surface,
+    width: '82%',
+    borderRadius: 22,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: C.border,
+  },
+  sortModalHandle: {
+    width: 36,
+    height: 4,
+    backgroundColor: C.border,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 18,
+  },
+  modalTitle: {
+    color: C.textPrimary,
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 16,
+    textAlign: 'center',
+    letterSpacing: 0.5,
+  },
+  sortOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 13,
+    borderRadius: 12,
+    marginBottom: 7,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  activeSortOption: {
+    backgroundColor: C.primaryDim,
+    borderColor: `${C.primary}44`,
+  },
+  sortIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: C.surfaceHigh,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sortIconWrapActive: {
+    backgroundColor: C.primary,
+  },
+  sortOptionText: {
+    color: C.textPrimary,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  activeSortOptionText: {
+    color: C.primary,
+    fontWeight: '700',
+  },
+
+  // SEARCH MODAL
+  modalSearchContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.88)',
+    justifyContent: 'flex-end',
+  },
+  modalSearchContent: {
+    backgroundColor: C.surface,
+    height: '92%',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    padding: 22,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderColor: C.border,
+  },
+  searchModalHandle: {
+    width: 36,
+    height: 4,
+    backgroundColor: C.border,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 18,
+  },
+  searchHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 22,
+    gap: 12,
+  },
+  searchInputWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: C.bg,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    height: 48,
+    borderWidth: 1,
+    borderColor: C.border,
+  },
+  searchInput: {
+    flex: 1,
+    color: C.textPrimary,
+    fontSize: 14,
+  },
+  closeSearchBtn: {
+    paddingHorizontal: 4,
+  },
+  closeText: {
+    color: C.primary,
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  searchItem: {
+    flexDirection: 'row',
+    paddingVertical: 11,
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
+    alignItems: 'center',
+  },
+  searchThumbnail: {
+    width: 48,
+    height: 66,
+    borderRadius: 9,
+    backgroundColor: C.bg,
+  },
+  searchTitle: {
+    color: C.textPrimary,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  searchPlatform: {
+    color: C.primary,
+    fontSize: 11,
+    fontWeight: '700',
+    marginTop: 3,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  addBtn: {
+    backgroundColor: C.primary,
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
