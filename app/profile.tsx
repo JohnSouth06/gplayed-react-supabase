@@ -288,7 +288,7 @@ const sectionStyles = StyleSheet.create({
   label: {
     color: C.primary,
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 2,
   },
@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
   avatarLetter: {
     color: C.primary,
     fontSize: 42,
-    fontWeight: '800',
+    fontWeight: '600',
   },
   uploadOverlay: {
     ...StyleSheet.absoluteFillObject,

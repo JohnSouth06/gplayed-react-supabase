@@ -67,6 +67,8 @@ export default function DashboardScreen() {
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedGame, setSelectedGame] = useState<any>(null);
   const [detailTab, setDetailTab] = useState<'manage' | 'info'>('manage');
+  const [viewerVisible, setViewerVisible] = useState(false);
+  const [viewerImage, setViewerImage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchGames();
@@ -408,16 +410,20 @@ export default function DashboardScreen() {
 
                       <Text style={styles.sectionTitle}>Plateforme</Text>
                       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.pillScroll}>
-                        {selectedGame.platforms_list?.map((p: string) => (
+                      {[...(selectedGame.platforms_list || [])]
+                        .sort((a, b) => (a === selectedGame.platform ? -1 : b === selectedGame.platform ? 1 : 0))
+                        .map((p: string) => (
                           <TouchableOpacity
                             key={p}
                             style={[styles.pill, selectedGame.platform === p && styles.activePill]}
                             onPress={() => updateGameField('platform', p)}
                           >
-                            <Text style={[styles.pillText, selectedGame.platform === p && styles.activePillText]}>{p}</Text>
+                            <Text style={[styles.pillText, selectedGame.platform === p && styles.activePillText]}>
+                              {p}
+                            </Text>
                           </TouchableOpacity>
                         ))}
-                      </ScrollView>
+                    </ScrollView>
 
                       <Text style={styles.sectionTitle}>Statut</Text>
                       <View style={styles.statusGrid}>
@@ -487,7 +493,13 @@ export default function DashboardScreen() {
                           <Text style={styles.sectionTitle}>Captures d'écran</Text>
                           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.screenshotScroll}>
                             {selectedGame.screenshots.map((url: string, index: number) => (
-                              <Image key={index} source={{ uri: url }} style={styles.screenshotImg} />
+                              <TouchableOpacity
+                                key={index}
+                                activeOpacity={0.85}
+                                onPress={() => { setViewerImage(url); setViewerVisible(true); }}
+                              >
+                                <Image source={{ uri: url }} style={styles.screenshotImg} />
+                              </TouchableOpacity>
                             ))}
                           </ScrollView>
                         </>
@@ -573,7 +585,28 @@ export default function DashboardScreen() {
                 )}
               />
             )}
+            
           </View>
+        </View>
+      </Modal>
+
+      {/* ─── MODALE VISIONNEUSE D'IMAGE ──────────────────────── */}
+      <Modal visible={viewerVisible} transparent animationType="fade" statusBarTranslucent>
+        <View style={styles.viewerOverlay}>
+          <TouchableOpacity
+            style={styles.viewerCloseBtn}
+            onPress={() => setViewerVisible(false)}
+            activeOpacity={0.8}
+          >
+            <MaterialCommunityIcons name="close" size={22} color={C.textPrimary} />
+          </TouchableOpacity>
+          {viewerImage && (
+            <Image
+              source={{ uri: viewerImage }}
+              style={styles.viewerImage}
+              resizeMode="contain"
+            />
+          )}
         </View>
       </Modal>
 
@@ -638,7 +671,7 @@ const styles = StyleSheet.create({
   },
   countNum: {
     color: C.primary,
-    fontWeight: '800',
+    fontWeight: '600',
   },
   sortButton: {
     backgroundColor: C.surface,
@@ -787,12 +820,12 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 7,
     paddingVertical: 4,
-    borderRadius: 15,
+    borderRadius: 12,
     borderWidth: 1,
   },
   statusText: {
     fontSize: 9,
-    fontWeight: '800',
+    fontWeight: '600',
     letterSpacing: 0.3,
   },
 
@@ -872,7 +905,7 @@ const styles = StyleSheet.create({
   detailTitle: {
     color: C.textPrimary,
     fontSize: 21,
-    fontWeight: '800',
+    fontWeight: '600',
     letterSpacing: 0.3,
     textShadowColor: 'rgba(0,0,0,0.9)',
     textShadowOffset: { width: 0, height: 1 },
@@ -936,7 +969,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     color: C.primary,
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '600',
     textTransform: 'uppercase',
     marginBottom: 12,
     marginTop: 8,
@@ -981,7 +1014,7 @@ const styles = StyleSheet.create({
   pill: {
     paddingHorizontal: 15,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: C.border,
     marginRight: 8,
@@ -1012,7 +1045,7 @@ const styles = StyleSheet.create({
     gap: 7,
     paddingHorizontal: 14,
     paddingVertical: 9,
-    borderRadius: 10,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: C.border,
     backgroundColor: C.surface,
@@ -1037,7 +1070,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: C.textPrimary,
     fontSize: 20,
-    fontWeight: '800',
+    fontWeight: '600',
   },
   playtimeLabel: {
     color: C.textSecondary,
@@ -1109,6 +1142,29 @@ const styles = StyleSheet.create({
     backgroundColor: C.surface,
   },
 
+  // IMAGE VIEWER
+  viewerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  viewerImage: {
+    width: width,
+    height: height * 0.75,
+  },
+  viewerCloseBtn: {
+    position: 'absolute',
+    top: 52,
+    right: 18,
+    zIndex: 10,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    padding: 9,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: C.border,
+  },
+
   // SORT MODAL
   modalOverlay: {
     flex: 1,
@@ -1135,7 +1191,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     color: C.textPrimary,
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: '600',
     marginBottom: 16,
     textAlign: 'center',
     letterSpacing: 0.5,

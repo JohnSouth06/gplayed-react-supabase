@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
   },
   headerAvatarText: {
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '600',
   },
   iconContainer: {
     width: 72,
@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: C.bg,
     fontSize: 15,
-    fontWeight: '800',
+    fontWeight: '600',
     letterSpacing: 1,
   },
 

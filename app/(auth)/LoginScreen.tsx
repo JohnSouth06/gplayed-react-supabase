@@ -410,7 +410,7 @@ const styles = StyleSheet.create({
   mainButtonText: {
     color: C.bg,
     fontSize: 15,
-    fontWeight: '800',
+    fontWeight: '600',
     letterSpacing: 1,
   },
 
@@ -525,7 +525,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     color: C.textPrimary,
     fontSize: 20,
-    fontWeight: '800',
+    fontWeight: '600',
     marginBottom: 6,
     letterSpacing: 0.3,
   },
@@ -570,7 +570,7 @@ const styles = StyleSheet.create({
   },
   modalBtnConfirmText: {
     color: C.bg,
-    fontWeight: '800',
+    fontWeight: '600',
     fontSize: 14,
     letterSpacing: 0.5,
   },
