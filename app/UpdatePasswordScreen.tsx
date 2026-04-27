@@ -80,13 +80,7 @@ export default function UpdatePasswordScreen() {
           headerTitle: "Sécurité",
           headerStyle: { backgroundColor: C.bg }, 
           headerShadowVisible: false, 
-          headerTintColor: C.primary,
-
-          headerTitleStyle: {
-            fontWeight: '600',
-            color: C.textPrimary,
-            fontSize: 18,
-          },
+          headerTintColor: C.textPrimary,
           headerBackTitle: "Profil",
         }} 
       />
@@ -256,7 +250,6 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   headerAvatarText: {
-    color: C.primary,
     fontSize: 12,
     fontWeight: '800',
   },
