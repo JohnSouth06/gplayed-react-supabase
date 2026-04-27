@@ -1,35 +1,132 @@
+import { supabase } from '@/lib/supabase';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Tabs, useRouter } from 'expo-router'; // Ajout de useRouter
-import React from 'react';
-import { TouchableOpacity, View } from 'react-native';
+import { Tabs, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Logo from '../../assets/images/logo.svg';
 
-export default function TabLayout() {
-  const insets = useSafeAreaInsets();
-  const router = useRouter(); // Initialisation du router
+// ─── Design Tokens (partagés avec index.tsx) ────────────────────────────────
+const C = {
+  bg: '#1e1e1e',
+  surface: '#272727',
+  border: '#3D3D3D',
+  primary: '#4CE5AE',
+  textSecondary: '#7A8C86',
+};
 
-  // Composant Avatar intégré au Header
-  const HeaderAvatar = () => (
-    <TouchableOpacity 
-      onPress={() => router.push('/profile')} // Navigation vers le profil
-      style={{ marginRight: 20 }}
+// ─── Composant Avatar dans le header ────────────────────────────────────────
+function HeaderAvatar() {
+  const router = useRouter();
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [initials, setInitials] = useState<string>('');
+
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from('profiles')
+        .select('username, avatar_url')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (data) {
+        setAvatarUrl(data.avatar_url ?? null);
+        setInitials(data.username?.charAt(0).toUpperCase() ?? '');
+      }
+    })();
+  }, []);
+
+  return (
+    <TouchableOpacity
+      onPress={() => router.push('/profile')}
+      style={avatarStyles.touchable}
+      activeOpacity={0.8}
     >
-      <View style={{ 
-        width: 38, 
-        height: 38, 
-        borderRadius: 19, 
-        backgroundColor: '#1e1e1e', 
-        borderWidth: 1.5, 
-        borderColor: '#4CE5AE',
-        justifyContent: 'center',
-        alignItems: 'center'
-      }}>
-        {/* Tu pourras plus tard afficher l'initiale ou l'image réelle ici */}
-        <MaterialCommunityIcons name="account" size={22} color="#4CE5AE" />
+      <View style={avatarStyles.ring}>
+        <View style={avatarStyles.inner}>
+          {avatarUrl ? (
+            <Image source={{ uri: avatarUrl }} style={avatarStyles.image} />
+          ) : (
+            <MaterialCommunityIcons
+              name={initials ? undefined : 'account'}
+              size={initials ? undefined : 20}
+              color={C.primary}
+              // Fallback si pas encore chargé
+            />
+          )}
+        </View>
       </View>
     </TouchableOpacity>
   );
+}
+
+const avatarStyles = StyleSheet.create({
+  touchable: {
+    marginRight: 18,
+  },
+  ring: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: `${C.primary}66`,
+    padding: 2,
+  },
+  inner: {
+    flex: 1,
+    borderRadius: 9,
+    backgroundColor: C.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 9,
+  },
+});
+
+// ─── Composant icône de tab bar ──────────────────────────────────────────────
+type TabIconProps = {
+  name: string;
+  color: string;
+  focused: boolean;
+};
+
+function TabIcon({ name, color, focused }: TabIconProps) {
+  return (
+    <View style={[tabIconStyles.wrapper, focused && tabIconStyles.wrapperActive]}>
+      <MaterialCommunityIcons name={name as any} size={24} color={color} />
+      {focused && <View style={tabIconStyles.dot} />}
+    </View>
+  );
+}
+
+const tabIconStyles = StyleSheet.create({
+  wrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 48,
+    height: 40,
+    borderRadius: 14,
+    gap: 3,
+  },
+  wrapperActive: {
+    backgroundColor: `${C.primary}14`,
+  },
+  dot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: C.primary,
+  },
+});
+
+// ─── Layout principal ────────────────────────────────────────────────────────
+export default function TabLayout() {
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
@@ -37,69 +134,75 @@ export default function TabLayout() {
         headerShown: true,
         tabBarShowLabel: false,
         headerStyle: {
-          backgroundColor: '#121212',
-          borderBottomWidth: 0,
+          backgroundColor: C.bg,
           elevation: 0,
           shadowOpacity: 0,
-          height: 110,
+          height: 108,
         },
         headerTitleAlign: 'center',
-        headerTitle: () => <Logo width={120} height={30} />,
-        headerRight: () => <HeaderAvatar />, // Notre avatar cliquable
-        headerTitleContainerStyle: { paddingBottom: 15 },
-        headerRightContainerStyle: { paddingBottom: 15 },
+        headerTitle: () => <Logo width={138} height={35} />,
+        headerRight: () => <HeaderAvatar />,
+        headerTitleContainerStyle: { paddingBottom: 12 },
+        headerRightContainerStyle: { paddingBottom: 12 },
+        headerShadowVisible: false,
 
         tabBarStyle: {
-          backgroundColor: '#121212',
+          backgroundColor: C.bg,
           borderTopWidth: 0,
-          height: 60 + insets.bottom,
-          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
-          paddingTop: 8,
+          height: 58 + insets.bottom,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 6,
+          paddingTop: 6,
+          paddingHorizontal: 8,
         },
-        tabBarActiveTintColor: '#4CE5AE',
-        tabBarInactiveTintColor: '#6c7d76',
+        tabBarActiveTintColor: C.primary,
+        tabBarInactiveTintColor: C.textSecondary,
       }}
     >
-      {/* ÉCRANS INVISIBLES DANS LE MENU BAS */}
-      <Tabs.Screen 
-        name="profile" 
-        options={{ 
-          href: null, // Masque l'onglet du menu
-          headerTitle: 'Mon Profil' 
-        }} 
+      {/* ─── Écrans masqués du menu ───── */}
+      <Tabs.Screen
+        name="profile"
+        options={{
+          href: null,
+          headerTitle: 'Mon Profil',
+        }}
       />
       <Tabs.Screen name="search" options={{ href: null }} />
 
-      {/* ÉCRANS VISIBLES DANS LE MENU BAS */}
+      {/* ─── Écrans visibles dans le menu ───── */}
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Jeux',
-          tabBarIcon: ({ color }) => <MaterialCommunityIcons name="gamepad-variant" size={26} color={color} />,
+          title: 'Collection',
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon name="gamepad-variant-outline" color={color} focused={focused} />
+          ),
         }}
       />
-
       <Tabs.Screen
         name="wishlist"
         options={{
-          title: 'Souhaits',
-          tabBarIcon: ({ color }) => <MaterialCommunityIcons name="hand-heart-outline" size={26} color={color} />,
+          title: 'Wishlist',
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon name="heart-outline" color={color} focused={focused} />
+          ),
         }}
       />
-
       <Tabs.Screen
         name="psntrophies"
         options={{
           title: 'Trophées',
-          tabBarIcon: ({ color }) => <MaterialCommunityIcons name="trophy" size={26} color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon name="trophy-outline" color={color} focused={focused} />
+          ),
         }}
       />
-
       <Tabs.Screen
         name="stats"
         options={{
           title: 'Stats',
-          tabBarIcon: ({ color }) => <MaterialCommunityIcons name="chart-areaspline-variant" size={26} color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon name="chart-areaspline-variant" color={color} focused={focused} />
+          ),
         }}
       />
     </Tabs>
