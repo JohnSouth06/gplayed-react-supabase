@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Tabs, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Image, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Logo from '../../assets/images/logo.svg';
 
@@ -157,7 +157,7 @@ export default function TabLayout() {
         tabBarActiveTintColor: C.primary,
         tabBarInactiveTintColor: C.textSecondary,
       }}
-    >
+    ><StatusBar style="auto" translucent backgroundColor="transparent" />
       {/* ─── Écrans masqués du menu ───── */}
       <Tabs.Screen
         name="profile"
