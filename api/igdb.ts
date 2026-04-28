@@ -1,4 +1,3 @@
-// api/igdb.ts
 const CLIENT_ID = process.env.EXPO_PUBLIC_IGDB_CLIENT_ID;
 const CLIENT_SECRET = process.env.EXPO_PUBLIC_IGDB_CLIENT_SECRET;
 
@@ -49,6 +48,7 @@ export const searchGames = async (query: string) => {
       'total_rating',
       'cover.url',
       'screenshots.url',
+      'first_release_date',
       'genres.name',
       'platforms.name',
       'version_parent',
