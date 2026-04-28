@@ -36,7 +36,7 @@ const C = {
   redDim: 'rgba(255,76,76,0.12)',
   blue: '#72ecfe',
   yellow: '#FFD34C',
-  grey: '#a3bfb4',
+  grey: '#c5dcd3',
 };
 
 // Options de tri
@@ -289,7 +289,7 @@ export default function DashboardScreen() {
               <View>
                 <View style={styles.headerTitleRow}>
                     <Text style={styles.title}>
-                      {username ? ( <> Bonjour <Text style={styles.usernameHighlight}>{username}</Text> </> ) : ( 'Ma Collection' )}
+                      {username ? ( <>Bonjour <Text style={styles.usernameHighlight}>{username}</Text> </> ) : ( 'Ma Collection' )}
                     </Text>
                 </View>
                 <Text style={styles.count}>
@@ -927,7 +927,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
     marginTop: 10,
-    marginLeft: 6,
+    marginLeft: 1,
   },
   countNum: {
     color: C.primary,
