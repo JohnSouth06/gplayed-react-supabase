@@ -3,7 +3,6 @@ import { supabase } from '@/lib/supabase';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
-
 import {
   ActivityIndicator,
   Alert,
@@ -12,12 +11,9 @@ import {
   Image,
   Modal,
   RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
+  ScrollView, StyleSheet, Text,
   TextInput,
-  TouchableOpacity,
-  View
+  TouchableOpacity, View
 } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
@@ -689,21 +685,48 @@ export default function DashboardScreen() {
               <FlatList
                 data={results}
                 keyExtractor={(item) => item.uniqueSearchId}
-                renderItem={({ item }) => (
-                  <TouchableOpacity style={styles.searchItem} onPress={() => addGameToCollection(item)}>
-                    <Image
-                      source={item.cover?.url ? { uri: `https:${item.cover.url}` } : require('../../assets/images/icon.png')}
-                      style={styles.searchThumbnail}
-                    />
-                    <View style={{ flex: 1, marginLeft: 14 }}>
-                      <Text style={styles.searchTitle} numberOfLines={1}>{item.name}</Text>
-                      <Text style={styles.searchPlatform}>{item.selectedPlatform}</Text>
-                    </View>
-                    <View style={styles.addBtn}>
-                      <MaterialCommunityIcons name="plus" size={18} color={C.bg} />
-                    </View>
-                  </TouchableOpacity>
-                )}
+                renderItem={({ item }) => {
+                  // Vérification de la présence dans la collection locale
+                  const isAlreadyAdded = myGames.some(
+                    (g) => g.igdb_id === item.id && g.platform === item.selectedPlatform
+                  );
+
+                  return (
+                    <TouchableOpacity 
+                      style={[
+                        styles.searchItem, 
+                        isAlreadyAdded && styles.searchItemDisabled // Application du style grisé
+                      ]} 
+                      onPress={() => !isAlreadyAdded && addGameToCollection(item)} // Désactivation du clic
+                      disabled={isAlreadyAdded}
+                    >
+                      <Image
+                        source={item.cover?.url ? { uri: `https:${item.cover.url}` } : require('../../assets/images/icon.png')}
+                        style={[styles.searchThumbnail, isAlreadyAdded && { opacity: 0.6 }]}
+                      />
+                      <View style={{ flex: 1, marginLeft: 14 }}>
+                        <Text style={[styles.searchTitle, isAlreadyAdded && { color: C.textMuted }]} numberOfLines={1}>
+                          {item.name}
+                        </Text>
+                        <Text style={[styles.searchPlatform, isAlreadyAdded && { color: C.textMuted }]}>
+                          {item.selectedPlatform}
+                        </Text>
+                      </View>
+                      
+                      {/* Changement d'icône si le jeu est déjà possédé */}
+                      <View style={[
+                        styles.addBtn, 
+                        isAlreadyAdded && { backgroundColor: C.surfaceHigh, borderColor: C.border, borderWidth: 1 }
+                      ]}>
+                        <MaterialCommunityIcons 
+                          name={isAlreadyAdded ? "check" : "plus"} 
+                          size={18} 
+                          color={isAlreadyAdded ? C.textMuted : C.bg} 
+                        />
+                      </View>
+                    </TouchableOpacity>
+                  );
+                }}
               />
             )}
             
@@ -1713,6 +1736,10 @@ const styles = StyleSheet.create({
     marginTop: 3,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  searchItemDisabled: {
+    opacity: 0.5, // Rend l'élément translucide
+    backgroundColor: 'rgba(0,0,0,0.1)',
   },
   addBtn: {
     backgroundColor: C.primary,
