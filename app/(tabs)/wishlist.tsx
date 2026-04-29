@@ -43,8 +43,8 @@ const SORT_OPTIONS = [
 ];
 
 const PRIORITIES = [
-  { id: 'Basse',   label: 'Pas pressé',  icon: 'sleep-outline',    color: C.grey,   level: 1 },
-  { id: 'Moyenne', label: 'Je le veux',  icon: 'bookmark-outline', color: C.blue,   level: 2 },
+  { id: 'Basse',   label: 'Pas pressé',  icon: 'sleep',    color: C.grey,   level: 1 },
+  { id: 'Moyenne', label: 'Je le veux',  icon: 'cards-heart', color: C.blue,   level: 2 },
   { id: 'Haute',   label: 'Très envie',  icon: 'lightning-bolt',   color: C.yellow, level: 3 },
   { id: 'Urgente', label: 'ASAP !',      icon: 'fire',             color: C.red,    level: 4 },
 ];
