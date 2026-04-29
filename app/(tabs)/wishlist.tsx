@@ -3,16 +3,16 @@ import { supabase } from '@/lib/supabase';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Dimensions,
-    FlatList,
-    Image,
-    Modal,
-    RefreshControl,
-    ScrollView, StyleSheet, Text,
-    TextInput,
-    TouchableOpacity, View
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  FlatList,
+  Image,
+  Modal,
+  RefreshControl,
+  ScrollView, StyleSheet, Text,
+  TextInput,
+  TouchableOpacity, View
 } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
@@ -25,8 +25,8 @@ const C = {
   border: '#3D3D3D',
   borderAccent: '#4CE5AE22',
   primary: '#e54c60',
-  primaryDim: 'rgba(76,229,174,0.12)',
-  primaryGlow: 'rgba(76,229,174,0.25)',
+  primaryDim: 'rgba(229, 76, 96, 0.12)',
+  primaryGlow: 'rgba(229, 76, 94, 0.25)',
   textPrimary: '#F0F0F0',
   textSecondary: '#7A8C86',
   textMuted: '#677a73',
@@ -43,10 +43,10 @@ const SORT_OPTIONS = [
 ];
 
 const PRIORITIES = [
-  { id: 'Basse', color: C.grey, icon: 'chevron-down' },
-  { id: 'Moyenne', color: C.blue, icon: 'minus' },
-  { id: 'Haute', color: C.yellow, icon: 'chevron-up' },
-  { id: 'Urgente', color: C.red, icon: 'fire' },
+  { id: 'Basse',   label: 'Pas pressé',  icon: 'sleep-outline',    color: C.grey,   level: 1 },
+  { id: 'Moyenne', label: 'Je le veux',  icon: 'bookmark-outline', color: C.blue,   level: 2 },
+  { id: 'Haute',   label: 'Très envie',  icon: 'lightning-bolt',   color: C.yellow, level: 3 },
+  { id: 'Urgente', label: 'ASAP !',      icon: 'fire',             color: C.red,    level: 4 },
 ];
 
 export default function WishlistScreen() {
@@ -66,6 +66,8 @@ export default function WishlistScreen() {
   const [selectedGame, setSelectedGame] = useState<any>(null);
   const [detailTab, setDetailTab] = useState<'manage' | 'info'>('manage');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewerVisible, setViewerVisible] = useState(false);
+  const [viewerImage, setViewerImage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchWishlist();
@@ -75,14 +77,14 @@ export default function WishlistScreen() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      
+
       // On filtre uniquement sur le statut 'wishlist'
       const { data, error } = await supabase
         .from('games')
         .select('*')
         .eq('user_id', user.id)
         .eq('status', 'Wishlist');
-        
+
       if (error) throw error;
       setWishlist(data || []);
 
@@ -204,6 +206,11 @@ export default function WishlistScreen() {
         rating_igdb: game.total_rating,
         cover_url: game.cover?.url ? `https:${game.cover.url.replace('t_thumb', 't_cover_big')}` : null,
         genres: game.genres?.map((g: any) => g.name) || [],
+        game_modes: game.game_modes?.map((m: any) => m.name) || [],
+        screenshots: game.screenshots?.map((s: any) => `https:${s.url.replace('t_thumb', 't_1080p')}`) || [],
+        developer: game.involved_companies?.find((c: any) => c.developer)?.company.name || null,
+        publisher: game.involved_companies?.find((c: any) => c.publisher)?.company.name || null,
+        engine: game.game_engines?.[0]?.name || null,
         platform: game.selectedPlatform,
         platforms_list: game.platforms?.map((p: any) => p.name) || [],
         format: activeFormat,
@@ -214,7 +221,7 @@ export default function WishlistScreen() {
 
       const { error } = await supabase.from('games').upsert(newGame, { onConflict: 'user_id, igdb_id, platform' });
       if (error) throw error;
-      
+
       setModalVisible(false);
       setSearchQuery('');
       fetchWishlist();
@@ -227,16 +234,37 @@ export default function WishlistScreen() {
 
   const processedGames = getProcessedGames();
 
-  // Helper pour calculer les jours avant sortie
-  const getReleaseCountdown = (date: string) => {
-    const today = new Date();
-    const release = new Date(date);
-    if (release > today) {
-      const diff = Math.ceil((release.getTime() - today.getTime()) / (1000 * 3600 * 24));
-      return `Sortie dans ${diff}j`;
-    }
-    return null;
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "Inconnue";
+    const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString('fr-FR', options);
   };
+
+  // Helper pour calculer les jours avant sortie
+  // Retourne { label, isUrgent } ou null si déjà sorti
+  // TODO (push notifications) : utiliser shouldNotify() pour déclencher
+  // Expo Notifications quand diff vaut 3, 2, 1 ou 0
+  const getReleaseCountdown = (dateString: string): { label: string; isUrgent: boolean } | null => {
+    if (!dateString) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const release = new Date(dateString);
+    release.setHours(0, 0, 0, 0);
+    const diff = Math.round((release.getTime() - today.getTime()) / (1000 * 3600 * 24));
+
+    if (diff < 0)  return null; // Jeu déjà sorti
+    if (diff === 0) return { label: "Aujourd'hui !", isUrgent: true };
+    if (diff === 1) return { label: 'Demain !',       isUrgent: true };
+    if (diff <= 3)  return { label: `J-${diff}`,      isUrgent: true };
+    if (diff <= 30) return { label: `${diff} jours`,  isUrgent: false };
+    const months = Math.floor(diff / 30);
+    if (months < 12) return { label: `~${months} mois`, isUrgent: false };
+    return { label: formatDate(dateString), isUrgent: false };
+  };
+
+  // Indique si une notification push doit être programmée pour ce jeu
+  // (à brancher sur Expo Notifications / schedulePushNotificationAsync)
+  // const shouldNotify = (daysLeft: number) => [0, 1, 2, 3].includes(daysLeft);
 
   return (
     <View style={styles.container}>
@@ -248,7 +276,7 @@ export default function WishlistScreen() {
         columnWrapperStyle={viewMode === 'grid' ? styles.row : undefined}
         contentContainerStyle={styles.listContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchWishlist} tintColor={C.primary} />}
-        
+
         ListHeaderComponent={
           <View>
             <View style={styles.headerRow}>
@@ -291,7 +319,7 @@ export default function WishlistScreen() {
                   onChangeText={setCollectionSearchQuery}
                 />
               </View>
-              
+
               <TouchableOpacity style={styles.sortButton} onPress={() => setSortModalVisible(true)}>
                 <MaterialCommunityIcons name="sort-variant" size={22} color={C.primary} />
               </TouchableOpacity>
@@ -315,10 +343,13 @@ export default function WishlistScreen() {
               {/* Image & Overlay */}
               <View style={viewMode === 'grid' ? styles.cardImageWrapper : styles.listCoverWrapper}>
                 <Image source={{ uri: item.cover_url }} style={viewMode === 'grid' ? styles.cardCover : styles.listCover} />
-                {countdown && (
-                    <View style={styles.countdownBadge}>
-                        <Text style={styles.countdownText}>{countdown}</Text>
-                    </View>
+                {/* Countdown overlay : uniquement en vue grille (image assez grande) */}
+                {viewMode === 'grid' && countdown && (
+                  <View style={[styles.countdownBadge, countdown.isUrgent && styles.countdownBadgeUrgent]}>
+                    <Text style={[styles.countdownText, countdown.isUrgent && styles.countdownTextUrgent]}>
+                      {countdown.label}
+                    </Text>
+                  </View>
                 )}
               </View>
 
@@ -326,12 +357,36 @@ export default function WishlistScreen() {
               <View style={viewMode === 'grid' ? styles.cardInfo : styles.listInfo}>
                 <Text style={viewMode === 'grid' ? styles.cardTitle : styles.listTitle} numberOfLines={1}>{item.title}</Text>
                 <View style={styles.cardBadgesRow}>
-                  <View style={[styles.prioTag, { backgroundColor: `${prioInfo.color}22`, borderColor: `${prioInfo.color}55` }]}>
-                    <MaterialCommunityIcons name={prioInfo.icon as any} size={10} color={prioInfo.color} />
-                    <Text style={[styles.prioTagText, { color: prioInfo.color }]}>{item.priority || 'Moyenne'}</Text>
+                  {/* Indicateur priorité : points de niveau + label en vue liste */}
+                  <View style={styles.priorityDotsRow}>
+                    {[1, 2, 3, 4].map(i => (
+                      <View
+                        key={i}
+                        style={[
+                          styles.priorityDot,
+                          { backgroundColor: i <= prioInfo.level ? prioInfo.color : `${prioInfo.color}28` },
+                        ]}
+                      />
+                    ))}
+                    {viewMode === 'list' && (
+                      <Text style={[styles.priorityDotsLabel, { color: prioInfo.color }]}>{prioInfo.label}</Text>
+                    )}
                   </View>
                   <PlatformBadge platform={item.platform} />
                 </View>
+                {/* Countdown inline en vue liste */}
+                {viewMode === 'list' && countdown && (
+                  <View style={[styles.listCountdownBadge, countdown.isUrgent && styles.listCountdownBadgeUrgent]}>
+                    <MaterialCommunityIcons
+                      name="calendar-clock"
+                      size={10}
+                      color={countdown.isUrgent ? C.yellow : C.textSecondary}
+                    />
+                    <Text style={[styles.listCountdownText, countdown.isUrgent && styles.listCountdownTextUrgent]}>
+                      {countdown.label}
+                    </Text>
+                  </View>
+                )}
               </View>
             </TouchableOpacity>
           );
@@ -377,22 +432,36 @@ export default function WishlistScreen() {
                         <Text style={styles.promoteBtnText}>Ajouter à ma collection</Text>
                       </TouchableOpacity>
 
-                      <Text style={styles.sectionTitle}>Priorité d'achat</Text>
-                      <View style={styles.statusGrid}>
-                        {PRIORITIES.map((p) => {
-                          const isActive = selectedGame.priority === p.id;
-                          return (
-                            <TouchableOpacity
-                              key={p.id}
-                              style={[styles.statusOption, isActive && { borderColor: p.color, backgroundColor: `${p.color}18` }]}
-                              onPress={() => updateGameField('priority', p.id)}
-                            >
-                              <MaterialCommunityIcons name={p.icon as any} size={14} color={isActive ? p.color : C.textSecondary} />
-                              <Text style={[styles.statusOptionText, isActive && { color: p.color }]}>{p.id}</Text>
-                            </TouchableOpacity>
-                          );
-                        })}
-                      </View>
+                      {selectedGame.release_date && (
+                        <>
+                          <Text style={styles.sectionTitle}>Date de sortie</Text>
+                          <View style={styles.dateBlock}>
+                            <View style={styles.dateInfo}>
+                              <MaterialCommunityIcons name="calendar-clock" size={20} color={C.primary} />
+                              <Text style={styles.dateText}>{formatDate(selectedGame.release_date)}</Text>
+                            </View>
+
+                            {(() => {
+                              const cd = getReleaseCountdown(selectedGame.release_date);
+                              if (cd) {
+                                return (
+                                  <View style={[styles.dateBadge, cd.isUrgent && styles.dateBadgeUrgent]}>
+                                    <Text style={[styles.dateBadgeText, cd.isUrgent && styles.dateBadgeTextUrgent]}>
+                                      {cd.label}
+                                    </Text>
+                                  </View>
+                                );
+                              }
+                              return (
+                                <View style={styles.dateBadgeReleased}>
+                                  <MaterialCommunityIcons name="check-circle-outline" size={13} color={C.primary} />
+                                  <Text style={styles.dateBadgeReleasedText}>Disponible</Text>
+                                </View>
+                              );
+                            })()}
+                          </View>
+                        </>
+                      )}
 
                       <Text style={styles.sectionTitle}>Format souhaité</Text>
                       <View style={styles.formatToggle}>
@@ -407,6 +476,46 @@ export default function WishlistScreen() {
                         ))}
                       </View>
 
+                      <Text style={styles.sectionTitle}>Priorité d'achat</Text>
+                      <View style={styles.priorityCardGrid}>
+                        {PRIORITIES.map((p) => {
+                          const isActive = selectedGame.priority === p.id;
+                          return (
+                            <TouchableOpacity
+                              key={p.id}
+                              style={[styles.priorityCard, isActive && { borderColor: p.color, backgroundColor: `${p.color}18` }]}
+                              onPress={() => updateGameField('priority', p.id)}
+                            >
+                              <View style={styles.priorityCardTop}>
+                                <MaterialCommunityIcons
+                                  name={p.icon as any}
+                                  size={22}
+                                  color={isActive ? p.color : C.textMuted}
+                                />
+                                {isActive && (
+                                  <MaterialCommunityIcons name="check-circle" size={14} color={p.color} />
+                                )}
+                              </View>
+                              <Text style={[styles.priorityCardLabel, isActive && { color: p.color }]}>
+                                {p.label}
+                              </Text>
+                              {/* Indicateur de niveau */}
+                              <View style={styles.priorityCardDots}>
+                                {[1, 2, 3, 4].map(i => (
+                                  <View
+                                    key={i}
+                                    style={[
+                                      styles.priorityCardDot,
+                                      { backgroundColor: i <= p.level ? p.color : `${p.color}28` },
+                                    ]}
+                                  />
+                                ))}
+                              </View>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+
                       <TouchableOpacity style={styles.deleteBtn} onPress={deleteWishItem}>
                         <MaterialCommunityIcons name="trash-can-outline" size={18} color={C.red} />
                         <Text style={styles.deleteBtnText}>Retirer de la wishlist</Text>
@@ -415,7 +524,34 @@ export default function WishlistScreen() {
                   ) : (
                     <View style={styles.infoContainer}>
                       <Text style={styles.sectionTitle}>Description</Text>
-                      <Text style={styles.descriptionText}>{selectedGame.description || "Aucune description."}</Text>
+                      <Text style={styles.descriptionText}>
+                        {selectedGame.description || "Aucune description disponible."}
+                      </Text>
+                      <Text style={styles.sectionTitle}>Détails techniques</Text>
+                      <View style={styles.techGrid}>
+                        <DetailRow label="Date de sortie" value={selectedGame.release_date ? formatDate(selectedGame.release_date) : null} />
+                        <DetailRow label="Éditeur" value={selectedGame.publisher} />
+                        <DetailRow label="Développeur" value={selectedGame.developer} />
+                        <DetailRow label="Moteur" value={selectedGame.engine} />
+                        <DetailRow label="Genres" value={selectedGame.genres?.join(', ')} />
+                      </View>
+
+                      {selectedGame.screenshots?.length > 0 && (
+                        <>
+                          <Text style={styles.sectionTitle}>Captures d'écran</Text>
+                          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.screenshotScroll}>
+                            {selectedGame.screenshots.map((url: string, index: number) => (
+                              <TouchableOpacity
+                                key={index}
+                                activeOpacity={0.85}
+                                onPress={() => { setViewerImage(url); setViewerVisible(true); }}
+                              >
+                                <Image source={{ uri: url }} style={styles.screenshotImg} />
+                              </TouchableOpacity>
+                            ))}
+                          </ScrollView>
+                        </>
+                      )}
                     </View>
                   )}
                 </ScrollView>
@@ -452,7 +588,7 @@ export default function WishlistScreen() {
               <View style={styles.searchInputWrapper}>
                 <TextInput
                   style={styles.searchInput}
-                  placeholder="Chercher un jeu à souhaiter..."
+                  placeholder="Chercher un jeu désiré..."
                   placeholderTextColor={C.textMuted}
                   value={searchQuery}
                   onChangeText={setSearchQuery}
@@ -482,6 +618,26 @@ export default function WishlistScreen() {
         </View>
       </Modal>
 
+      {/* ─── MODALE VISIONNEUSE D'IMAGE ──────────────────────── */}
+      <Modal visible={viewerVisible} transparent animationType="fade" statusBarTranslucent>
+        <View style={styles.viewerOverlay}>
+          <TouchableOpacity
+            style={styles.viewerCloseBtn}
+            onPress={() => setViewerVisible(false)}
+            activeOpacity={0.8}
+          >
+            <MaterialCommunityIcons name="close" size={22} color={C.textPrimary} />
+          </TouchableOpacity>
+          {viewerImage && (
+            <Image
+              source={{ uri: viewerImage }}
+              style={styles.viewerImage}
+              resizeMode="contain"
+            />
+          )}
+        </View>
+      </Modal>
+
       <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
         <MaterialCommunityIcons name="heart-plus" size={28} color={C.bg} />
       </TouchableOpacity>
@@ -492,25 +648,36 @@ export default function WishlistScreen() {
 // ─── Composants réutilisés de index.tsx ──────────────────────────
 
 const PlatformBadge = ({ platform }: { platform: string }) => {
-    const p = platform?.toLowerCase() || '';
-    let icon = 'gamepad-variant-outline';
-    let bg = C.textMuted;
-    if (p.includes('playstation')) { icon = 'sony-playstation'; bg = '#003791'; }
-    if (p.includes('switch') || p.includes('nintendo')) { icon = 'nintendo-switch'; bg = '#E4000F'; }
-    if (p.includes('xbox')) { icon = 'microsoft-xbox'; bg = '#107C10'; }
-    if (p.includes('pc')) { icon = 'microsoft-windows'; bg = '#555E68'; }
+  const p = platform?.toLowerCase() || '';
+  let icon = 'gamepad-variant-outline';
+  let bg = C.textMuted;
+  if (p.includes('playstation')) { icon = 'sony-playstation'; bg = '#003791'; }
+  if (p.includes('switch') || p.includes('nintendo')) { icon = 'nintendo-switch'; bg = '#E4000F'; }
+  if (p.includes('xbox')) { icon = 'microsoft-xbox'; bg = '#107C10'; }
+  if (p.includes('pc')) { icon = 'microsoft-windows'; bg = '#555E68'; }
 
-    return (
-      <View style={[badgeStyles.platformBadge, { backgroundColor: bg }]}>
-        <MaterialCommunityIcons name={icon as any} size={10} color="#fff" />
-        <Text style={badgeStyles.platformBadgeText}>{platform}</Text>
-      </View>
-    );
+  return (
+    <View style={[badgeStyles.platformBadge, { backgroundColor: bg }]}>
+      <MaterialCommunityIcons name={icon as any} size={10} color="#fff" />
+      <Text style={badgeStyles.platformBadgeText}>{platform}</Text>
+    </View>
+  );
+};
+
+// ─── Composant DetailRow ─────────────────────────────────────────────────────
+const DetailRow = ({ label, value, highlight }: { label: string; value: any; highlight?: boolean }) => {
+  if (!value) return null;
+  return (
+    <View style={styles.detailRow}>
+      <Text style={styles.detailLabel}>{label}</Text>
+      <Text style={[styles.detailValue, highlight && { color: C.primary, fontWeight: '700' }]}>{value}</Text>
+    </View>
+  );
 };
 
 const badgeStyles = StyleSheet.create({
-    platformBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 6, paddingVertical: 3, borderRadius: 6 },
-    platformBadgeText: { color: '#fff', fontSize: 9, fontWeight: '700' },
+  platformBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 6, paddingVertical: 3, borderRadius: 6 },
+  platformBadgeText: { color: '#fff', fontSize: 9, fontWeight: '700' },
 });
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
@@ -627,7 +794,7 @@ const styles = StyleSheet.create({
   },
 
   collectionSearchContainer: {
-    flex: 1, 
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: C.surface,
@@ -1372,34 +1539,130 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // WISHLIST
-  prioTag: {
+  // WISHLIST — PRIORITY DOTS (remplacement du prioTag textuel)
+  priorityDotsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-    borderWidth: 1,
+    gap: 3,
   },
-  prioTagText: {
-    fontSize: 9,
+  priorityDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  priorityDotsLabel: {
+    fontSize: 10,
     fontWeight: '700',
+    marginLeft: 5,
+    letterSpacing: 0.2,
   },
+
+  // COUNTDOWN BADGE (vue grille — overlay sur l'image)
   countdownBadge: {
     position: 'absolute',
     bottom: 8,
     left: 8,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    paddingHorizontal: 6,
+    backgroundColor: 'rgba(0,0,0,0.72)',
+    paddingHorizontal: 7,
     paddingVertical: 3,
-    borderRadius: 4,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  countdownBadgeUrgent: {
+    backgroundColor: 'rgba(255,211,76,0.18)',
+    borderColor: 'rgba(255,211,76,0.4)',
   },
   countdownText: {
-    color: '#FFD34C', // Correspond à C.yellow
+    color: C.textSecondary,
     fontSize: 10,
     fontWeight: '800',
   },
+  countdownTextUrgent: {
+    color: C.yellow,
+  },
+
+  // COUNTDOWN BADGE INLINE (vue liste)
+  listCountdownBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'flex-start',
+    backgroundColor: C.surfaceHigh,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: C.border,
+  },
+  listCountdownBadgeUrgent: {
+    backgroundColor: 'rgba(255,211,76,0.1)',
+    borderColor: 'rgba(255,211,76,0.35)',
+  },
+  listCountdownText: {
+    color: C.textSecondary,
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  listCountdownTextUrgent: {
+    color: C.yellow,
+  },
+
+  // SÉLECTEUR DE PRIORITÉ (modal détail) — grille 2×2 visuelle
+  priorityCardGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 9,
+    marginBottom: 24,
+  },
+  priorityCard: {
+    width: (width - 40 - 9) / 2,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: C.border,
+    backgroundColor: C.surface,
+    gap: 8,
+  },
+  priorityCardTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  priorityCardLabel: {
+    color: C.textSecondary,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  priorityCardDots: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  priorityCardDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+  },
+
+  // DATE BADGE — état "Disponible" (jeu déjà sorti)
+  dateBadgeReleased: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: C.primaryDim,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: `${C.primary}44`,
+  },
+  dateBadgeReleasedText: {
+    color: C.primary,
+    fontSize: 11,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+
   promoteBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1414,5 +1677,41 @@ const styles = StyleSheet.create({
     color: '#1e1e1e', // Correspond à C.bg
     fontWeight: '800',
     fontSize: 14,
+  },
+  // RELEASE DATE COUNTDOWN
+  dateBlock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: C.surface,
+    borderRadius: 14,
+    padding: 15,
+    marginBottom: 22,
+    borderWidth: 1,
+    borderColor: C.border,
+  },
+  dateInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  dateText: {
+    color: C.textPrimary,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  dateBadge: {
+    backgroundColor: 'rgba(255, 211, 76, 0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 211, 76, 0.4)',
+  },
+  dateBadgeText: {
+    color: '#FFD34C', // C.yellow
+    fontSize: 11,
+    fontWeight: '900',
+    textTransform: 'uppercase',
   }
 });
