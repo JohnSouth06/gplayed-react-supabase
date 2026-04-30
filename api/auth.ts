@@ -3,16 +3,24 @@ import { supabase } from '../lib/supabase';
 
 // Inscription : Auth + Création du profil avec Username
 export const signUpUser = async (email: string, pass: string, username: string) => {
-  const { data, error } = await supabase.auth.signUp({ email, password: pass });
+  // On passe le username dans les métadonnées (options.data)
+  // Ainsi, le trigger SQL sur Supabase pourra le récupérer.
+  const { data, error } = await supabase.auth.signUp({ 
+    email, 
+    password: pass,
+    options: {
+      data: {
+        username: username 
+      }
+    }
+  });
 
   if (error) throw error;
 
-  if (data.user) {
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .insert([{ id: data.user.id, username }]);
-    if (profileError) throw profileError;
-  }
+  // IMPORTANT : On a supprimé le bloc "insert" manuel dans 'profiles'.
+  // C'est désormais le trigger SQL qui s'occupe de créer la ligne 
+  // dans la table profiles de manière sécurisée et automatique.
+
   return data;
 };
 
@@ -29,7 +37,7 @@ export const resetPassword = async (email: string) => {
     redirectTo: 'gplayed://reset-password',
   });
   if (error) throw error;
-}; // <--- Cette accolade manquait ici !
+};
 
 // Mise à jour du mot de passe après clic sur le lien dans l'email
 export const updateUserPassword = async (newPassword: string) => {
@@ -50,7 +58,7 @@ export const signInWithOAuth = async (provider: Provider) => {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: provider,
     options: {
-      redirectTo: 'gplayed://auth', // Utilise le schéma de ton app.json
+      redirectTo: 'gplayed://auth', 
     },
   });
   if (error) throw error;
@@ -62,7 +70,6 @@ export const deleteAccount = async () => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
 
-  // Option A : Supprimer les données du profil (les données auth restent)
   const { error: profileError } = await supabase
     .from('profiles')
     .delete()
