@@ -1,14 +1,23 @@
 // constants/Theme.ts
 
 export const C = {
+
+  // Couleurs principales
+  primary: '#4CE5AE',
+  primaryDim: 'rgba(76,229,174,0.12)',
+  primaryGlow: 'rgba(76,229,174,0.25)',
+
+  // Couleurs wishlist
+  wishlist: '#e54c7f',
+  wishlistDim: 'rgba(229, 76, 122, 0.12)',
+  wishlistGlow: 'rgba(229, 76, 122, 0.25)',
+
+  // Global
   bg: '#1e1e1e',
   surface: '#272727',
   surfaceHigh: '#2e2e2e',
   border: '#3D3D3D',
   borderAccent: '#4CE5AE22',
-  primary: '#4CE5AE',
-  primaryDim: 'rgba(76,229,174,0.12)',
-  primaryGlow: 'rgba(76,229,174,0.25)',
   textPrimary: '#F0F0F0',
   textSecondary: '#7A8C86',
   textMuted: '#677a73',
