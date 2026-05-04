@@ -1,74 +1,101 @@
 import { supabase } from '@/lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { Stack, useRouter, useSegments } from 'expo-router';
-import { useEffect, useState } from 'react';
+import * as SplashScreen from 'expo-splash-screen';
+import LottieView from 'lottie-react-native';
+import { useEffect, useRef, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+
+SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [session, setSession] = useState<Session | null>(null);
   const [initialized, setInitialized] = useState(false);
+  const [minimumTimeElapsed, setMinimumTimeElapsed] = useState(false);
+  const [isSplashAnimationComplete, setIsSplashAnimationComplete] = useState(false);
+  
+  const animationRef = useRef<LottieView>(null);
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
-    // Vérifier la session initiale
+    SplashScreen.hideAsync();
+
+    const timer = setTimeout(() => {
+      setMinimumTimeElapsed(true);
+    }, 5000);
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setInitialized(true);
     });
 
-    // Écouter les changements (Login / Logout)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    if (!initialized) return;
-
-    // Vérifier si l'utilisateur est dans le groupe (auth)
-    const inAuthGroup = segments[0] === '(auth)';
-
-    if (!session && !inAuthGroup) {
-      // Rediriger vers la connexion si pas de session et pas déjà dans auth
-      router.replace('/(auth)/LoginScreen');
-    } else if (session && inAuthGroup) {
-      // Rediriger vers l'app principale si session active et dans auth
-      router.replace('/(tabs)');
-    }
-  }, [session, initialized, segments]);
-
-  // Changement de mot de passe - Redirection après clic sur le lien dans l'email
-  useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
-        // Rediriger vers l'écran de mise à jour du mot de passe
-        router.replace('/(auth)/UpdatePasswordScreen');
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, []);
-
-  // Écouter les événements d'authentification pour la récupération de mot de passe
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        // Redirection vers l'écran de mise à jour si l'événement de récupération est détecté
         router.replace('/(auth)/UpdatePasswordScreen');
       } else {
         setSession(session);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timer); 
+    };
   }, []);
 
+  useEffect(() => {
+    if (!initialized) return;
+
+    const inAuthGroup = segments[0] === '(auth)';
+    if (!session && !inAuthGroup) {
+      router.replace('/(auth)/LoginScreen');
+    } else if (session && inAuthGroup) {
+      router.replace('/(tabs)');
+    }
+  }, [session, initialized, segments]);
+
+  const onAnimationFinish = () => {
+    if (!minimumTimeElapsed || !initialized) {
+      animationRef.current?.play(45, 90);
+    } else {
+      setIsSplashAnimationComplete(true);
+    }
+  };
+
+  const showApp = initialized && minimumTimeElapsed && isSplashAnimationComplete;
+
   return (
-    <Stack>
-      <Stack.Screen name="(auth)/LoginScreen" options={{ headerShown: false }} />
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-    </Stack>
+    <View style={{ flex: 1 }}>
+      <Stack>
+        <Stack.Screen name="(auth)/LoginScreen" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+      </Stack>
+
+      {!showApp && (
+        <View style={[StyleSheet.absoluteFill, styles.splashContainer]}>
+          <LottieView
+            ref={animationRef}
+            source={require('../assets/animations/splash.json')}
+            autoPlay
+            loop={false}
+            speed={1}
+            style={{ width: '60%', aspectRatio: 1 }}
+            resizeMode="contain"
+            onAnimationFinish={onAnimationFinish}
+          />
+        </View>
+      )}
+    </View>
   );
-  }
+}
+
+const styles = StyleSheet.create({
+  splashContainer: {
+    backgroundColor: '#1e1e1e',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 999,
+  },
+});
