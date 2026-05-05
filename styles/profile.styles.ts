@@ -1,10 +1,7 @@
-// app/profile.styles.ts
+// styles/profile.styles.ts
 import { StyleSheet } from 'react-native';
-import { C } from '../constants/Theme';
 
-export { C };
-
-export const getProfileStyles = (theme: typeof C, accentColor: string, accentColorDim: string) => {
+export const getProfileStyles = (theme: any, accentColor: string, accentColorDim: string) => {
   return {
     sectionStyles: StyleSheet.create({
       row: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 10, marginTop: 24, paddingHorizontal: 2 },

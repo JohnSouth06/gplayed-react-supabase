@@ -7,9 +7,9 @@ import {
   ActivityIndicator, Alert, FlatList, Image, Modal,
   RefreshControl, ScrollView,
   Text, TextInput, TouchableOpacity,
-  useColorScheme,
   View
 } from 'react-native';
+import { useCustomTheme } from '../../context/ThemeContext';
 
 import {
   addGameToCollection,
@@ -23,7 +23,7 @@ import {
 } from '@/api/collection';
 import { searchGames } from '@/api/igdb';
 
-import { badgeStyles, C, getBaseStyles, getPlatformInfo, getRatingColor, SORT_OPTIONS } from '../../styles/index.styles';
+import { badgeStyles, getBaseStyles, getPlatformInfo, getRatingColor, SORT_OPTIONS } from '../../styles/index.styles';
 
 const PlatformBadge = ({ platform }: { platform: string }) => {
   const { icon, bg, label } = getPlatformInfo(platform);
@@ -57,8 +57,7 @@ const DetailRow = ({ label, value, highlight, styles, accentColor }: { label: st
 };
 
 export default function DashboardScreen() {
-  const colorScheme = useColorScheme();
-  const currentTheme = C;
+  const { theme: currentTheme } = useCustomTheme(); 
   const accentColor = currentTheme.primary;
 
   const styles = useMemo(() => 
@@ -240,13 +239,18 @@ export default function DashboardScreen() {
     } catch (error: any) { alert(error.message); }
   };
 
-  const getStatusColor = (displayStatus: string) => {
+const getStatusColor = (displayStatus: string) => {
     switch (displayStatus) {
-      case 'En cours': return accentColor;
-      case 'Terminé': return C.blue;
-      case 'Platiné - 100%': return C.yellow;
-      case 'Abandonné': return C.red;
-      default: return C.grey;
+      case 'En cours': 
+        return accentColor;
+      case 'Terminé': 
+        return currentTheme.blue;
+      case 'Platiné - 100%': 
+        return currentTheme.yellow;
+      case 'Abandonné': 
+        return currentTheme.red;
+      default: 
+        return currentTheme.grey;
     }
   };
 
@@ -270,7 +274,7 @@ export default function DashboardScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar style="light" translucent backgroundColor="transparent" />
+      <StatusBar style={currentTheme.bg === '#ffffff' ? "dark" : "light"} />
       <FlatList
         data={processedGames}
         key={viewMode}
@@ -551,7 +555,7 @@ export default function DashboardScreen() {
                       </View>
 
                       <TouchableOpacity style={styles.deleteBtn} onPress={deleteGame}>
-                        <MaterialCommunityIcons name="trash-can-outline" size={18} color={C.red} />
+                        <MaterialCommunityIcons name="trash-can-outline" size={18} color={currentTheme.red} />
                         <Text style={styles.deleteBtnText}>Supprimer de la collection</Text>
                       </TouchableOpacity>
                     </View>
@@ -628,7 +632,7 @@ export default function DashboardScreen() {
                 <MaterialCommunityIcons name="magnify" size={18} color={currentTheme.textSecondary} style={{ marginRight: 10 }} />
                 <TextInput
                   style={styles.searchInput}
-                  placeholder="Rechercher sur IGDB..."
+                  placeholder="Rechercher jeu..."
                   placeholderTextColor={currentTheme.textMuted}
                   value={searchQuery}
                   onChangeText={setSearchQuery}

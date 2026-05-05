@@ -5,10 +5,13 @@ import * as SplashScreen from 'expo-splash-screen';
 import LottieView from 'lottie-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { ThemeProvider, useCustomTheme } from '../context/ThemeContext';
 
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+
+function MainLayout() {
+  const { theme } = useCustomTheme();
   const [session, setSession] = useState<Session | null>(null);
   const [initialized, setInitialized] = useState(false);
   const [minimumTimeElapsed, setMinimumTimeElapsed] = useState(false);
@@ -66,7 +69,7 @@ export default function RootLayout() {
   const showApp = initialized && minimumTimeElapsed && isSplashAnimationComplete;
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: theme.bg }}>
       <Stack>
         <Stack.Screen name="(auth)/LoginScreen" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -74,16 +77,14 @@ export default function RootLayout() {
       </Stack>
 
       {!showApp && (
-        <View style={[StyleSheet.absoluteFill, styles.splashContainer]}>
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.bg, alignItems: 'center', justifyContent: 'center', zIndex: 999 }]}>
           <LottieView
             ref={animationRef}
             source={require('../assets/animations/splash.json')}
             autoPlay
             loop={false}
-            speed={1}
-            style={{ width: '60%', aspectRatio: 1 }}
-            resizeMode="contain"
             onAnimationFinish={onAnimationFinish}
+            style={{ width: '60%', aspectRatio: 1 }}
           />
         </View>
       )}
@@ -91,11 +92,10 @@ export default function RootLayout() {
   );
 }
 
-const styles = StyleSheet.create({
-  splashContainer: {
-    backgroundColor: '#1e1e1e',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 999,
-  },
-});
+export default function RootLayout() {
+  return (
+    <ThemeProvider>
+      <MainLayout />
+    </ThemeProvider>
+  );
+}

@@ -1,10 +1,7 @@
-// app/UpdatePasswordScreen.styles.ts
+// styles/UpdatePasswordScreen.styles.ts
 import { StyleSheet } from 'react-native';
-import { C } from '../constants/Theme';
 
-export { C };
-
-export const getUpdatePasswordStyles = (theme: typeof C, accentColor: string, accentColorDim: string) => StyleSheet.create({
+export const getUpdatePasswordStyles = (theme: any, accentColor: string, accentColorDim: string) => StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.bg, justifyContent: 'center' },
   content: { paddingHorizontal: 24 },
   iconContainer: { width: 72, height: 72, borderRadius: 20, backgroundColor: accentColorDim, borderWidth: 1, borderColor: `${accentColor}44`, alignItems: 'center', justifyContent: 'center', alignSelf: 'center', marginBottom: 24 },

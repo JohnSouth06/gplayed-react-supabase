@@ -8,13 +8,13 @@ import { Stack, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator, Alert, Image, ScrollView, Switch,
-  Text, TouchableOpacity, View, useColorScheme
+  Text, TouchableOpacity, View
 } from 'react-native';
-import { C, getProfileStyles } from '../styles/profile.styles';
+import { useCustomTheme } from '../context/ThemeContext';
+import { getProfileStyles } from '../styles/profile.styles';
 
-export default function ProfileScreen() {
-  const colorScheme = useColorScheme();
-  const currentTheme = C; 
+export default function ProfileScreen() { 
+  const { theme: currentTheme, themeType, setTheme } = useCustomTheme(); 
   const accentColor = currentTheme.primary;
 
   const { sectionStyles, menuStyles, styles } = useMemo(() => 
@@ -42,7 +42,6 @@ export default function ProfileScreen() {
     } catch (error: any) { console.error(error.message); } finally { setLoading(false); }
   }
 
-  // --- TON LOGIC D'UPLOAD (Source 19) ---
   const uploadAvatar = async (file: any) => {
     const formData = new FormData();
     formData.append('avatar', file);
@@ -118,6 +117,20 @@ export default function ProfileScreen() {
     </TouchableOpacity>
   );
 
+  const ThemeOption = ({ label, isActive, onPress, color, currentTheme, accentColor }: any) => (
+  <TouchableOpacity style={menuStyles.item} onPress={onPress} activeOpacity={0.7}>
+    <View style={[menuStyles.iconWrap, { backgroundColor: `${color}15` }]}>
+      <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: color }} />
+    </View>
+    <Text style={menuStyles.label}>{label}</Text>
+    <MaterialCommunityIcons 
+      name={isActive ? "radiobox-marked" : "radiobox-blank"} 
+      size={22} 
+      color={isActive ? accentColor : currentTheme.textMuted} 
+    />
+  </TouchableOpacity>
+);
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <Stack.Screen options={{ 
@@ -145,6 +158,39 @@ export default function ProfileScreen() {
 
       <SectionTitle label="Sécurité" icon="shield-outline" />
       <View style={styles.card}><MenuRow icon="lock-reset" label="Changer le mot de passe" onPress={() => router.push('/UpdatePasswordScreen')} showChevron /></View>
+
+      <SectionTitle label="Apparence" icon="palette-outline" />
+      <View style={styles.card}>
+        <ThemeOption
+          label="Thème Mint (Original)"
+          isActive={themeType === 'mint'}
+          onPress={() => setTheme('mint')}
+          color="#4CE5AE" // La couleur de votre thème Mint[cite: 14]
+          currentTheme={currentTheme}
+          accentColor={accentColor}
+        />
+        {/* Séparateur visuel */}
+        <View style={{ height: 1, backgroundColor: currentTheme.border, marginLeft: 50 }} />
+        
+        <ThemeOption
+          label="Mode Sombre"
+          isActive={themeType === 'dark'}
+          onPress={() => setTheme('dark')}
+          color="#bb86fc" // La couleur primary de DarkTheme[cite: 14]
+          currentTheme={currentTheme}
+          accentColor={accentColor}
+        />
+        <View style={{ height: 1, backgroundColor: currentTheme.border, marginLeft: 50 }} />
+
+        <ThemeOption
+          label="Mode Clair"
+          isActive={themeType === 'light'}
+          onPress={() => setTheme('light')}
+          color="#6200ee" // La couleur primary de LightTheme[cite: 14]
+          currentTheme={currentTheme}
+          accentColor={accentColor}
+        />
+      </View>
 
       <SectionTitle label="Préférences" icon="tune-variant" />
       <View style={styles.card}>

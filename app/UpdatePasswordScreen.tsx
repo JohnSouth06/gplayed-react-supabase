@@ -4,14 +4,16 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import {
-  ActivityIndicator, KeyboardAvoidingView, Platform,
-  Text, TextInput, TouchableOpacity, View, useColorScheme
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView, Platform,
+  Text, TextInput, TouchableOpacity, View
 } from 'react-native';
-import { C, getUpdatePasswordStyles } from '../styles/UpdatePasswordScreen.styles';
+import { useCustomTheme } from '../context/ThemeContext';
+import { getUpdatePasswordStyles } from '../styles/UpdatePasswordScreen.styles';
 
 export default function UpdatePasswordScreen() {
-  const colorScheme = useColorScheme();
-  const currentTheme = C;
+  const { theme: currentTheme } = useCustomTheme(); // Récupération du thème dynamique
   const accentColor = currentTheme.primary;
 
   const styles = useMemo(() => 
@@ -25,7 +27,7 @@ export default function UpdatePasswordScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  // --- TON LOGIC DE FORCE (Source 21) ---
+  // Indicateur de force utilisant le thème dynamique
   const strength = useMemo(() => {
     if (password.length === 0) return { level: 0, label: '', color: 'transparent' };
     if (password.length < 6) return { level: 1, label: 'Trop court', color: currentTheme.red };
@@ -40,8 +42,13 @@ export default function UpdatePasswordScreen() {
     if (password !== confirmPassword) { Alert.alert("Erreur", "Les mots de passe ne correspondent pas."); return; }
     if (password.length < 6) { Alert.alert("Erreur", "Au moins 6 caractères."); return; }
     setIsLoading(true);
-    try { await updateUserPassword(password); Alert.alert("Succès", "Mot de passe mis à jour !"); router.replace('/(tabs)'); } 
-    catch (error: any) { Alert.alert("Erreur", error.message); } finally { setIsLoading(false); }
+    try { 
+        await updateUserPassword(password); 
+        Alert.alert("Succès", "Mot de passe mis à jour !"); 
+        router.replace('/(tabs)'); 
+    } 
+    catch (error: any) { Alert.alert("Erreur", error.message); } 
+    finally { setIsLoading(false); }
   };
 
   return (

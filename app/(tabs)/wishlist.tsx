@@ -7,7 +7,6 @@ import {
   ActivityIndicator, Alert, FlatList, Image, Modal,
   RefreshControl, ScrollView,
   Text, TextInput, TouchableOpacity,
-  useColorScheme,
   View
 } from 'react-native';
 
@@ -22,7 +21,8 @@ import {
 } from '@/api/collection';
 import { searchGames } from '@/api/igdb';
 
-import { badgeStyles, C, getBaseStyles, getPlatformInfo } from '../../styles/index.styles';
+import { useCustomTheme } from '../../context/ThemeContext';
+import { badgeStyles, getBaseStyles, getPlatformInfo } from '../../styles/index.styles';
 import { getWishlistStyles } from '../../styles/wishlist.styles';
 
 const WISHLIST_SORT_OPTIONS = [
@@ -33,16 +33,6 @@ const WISHLIST_SORT_OPTIONS = [
 ];
 
 const PRIORITIES = ['Basse', 'Moyenne', 'Haute', 'Immédiate'];
-
-const getPriorityColor = (priority: string) => {
-  switch (priority) {
-    case 'Immédiate': return C.red || '#FF4C4C';
-    case 'Haute': return '#FF9800';
-    case 'Moyenne': return C.blue || '#2196F3';
-    case 'Basse': return C.textMuted;
-    default: return C.textMuted;
-  }
-};
 
 const getCountdown = (dateString: string) => {
   if (!dateString) return null;
@@ -78,11 +68,9 @@ const DetailRow = ({ label, value, highlight, styles, accentColor }: { label: st
 };
 
 export default function WishlistScreen() {
-  // ─── GESTION DU THÈME ────────────────────────────────────────────────────────
-  const colorScheme = useColorScheme();
-  const currentTheme = C;
+  // ─── GESTION DU THÈME ─
+  const { theme: currentTheme } = useCustomTheme();
   const accentColor = currentTheme.wishlist;
-
 
   const defaultStyles = useMemo(() => 
     getBaseStyles(currentTheme, accentColor, currentTheme.wishlistDim), 
@@ -91,7 +79,6 @@ export default function WishlistScreen() {
   const wishlistStyles = useMemo(() => 
     getWishlistStyles(currentTheme, accentColor), 
   [currentTheme, accentColor]);
-  // ───────────────────────────────────────────────────────────────────────────
 
   const [username, setUsername] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -118,6 +105,21 @@ export default function WishlistScreen() {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'Immédiate': 
+        return currentTheme.red; // Utilise la couleur du thème[cite: 30]
+      case 'Haute': 
+        return '#FF9800';
+      case 'Moyenne': 
+        return currentTheme.blue; // Utilise la couleur du thème[cite: 30]
+      case 'Basse': 
+        return currentTheme.textMuted;
+      default: 
+        return currentTheme.textMuted;
+    }
+  };
 
   useEffect(() => {
     fetchGames();
@@ -309,7 +311,7 @@ export default function WishlistScreen() {
 
   return (
     <View style={defaultStyles.container}>
-      <StatusBar style="light" translucent backgroundColor="transparent" />
+      <StatusBar style={currentTheme.bg === '#ffffff' ? "dark" : "light"} />
       <FlatList
         data={processedGames}
         key={viewMode}
@@ -590,7 +592,7 @@ export default function WishlistScreen() {
                       </TouchableOpacity>
 
                       <TouchableOpacity style={defaultStyles.deleteBtn} onPress={deleteGame}>
-                        <MaterialCommunityIcons name="playlist-remove" size={18} color={C.red} />
+                        <MaterialCommunityIcons name="playlist-remove" size={18} color={currentTheme.red} />
                         <Text style={defaultStyles.deleteBtnText}>Retirer de la Wishlist</Text>
                       </TouchableOpacity>
                     </View>
