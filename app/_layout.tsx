@@ -3,15 +3,14 @@ import { Session } from '@supabase/supabase-js';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import LottieView from 'lottie-react-native';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { ThemeProvider, useCustomTheme } from '../context/ThemeContext';
 
 SplashScreen.preventAutoHideAsync();
 
-
 function MainLayout() {
-  const { theme } = useCustomTheme();
+  const { theme } = useCustomTheme(); // Récupère le thème actif (Mint, Dark, ou Light)
   const [session, setSession] = useState<Session | null>(null);
   const [initialized, setInitialized] = useState(false);
   const [minimumTimeElapsed, setMinimumTimeElapsed] = useState(false);
@@ -20,6 +19,25 @@ function MainLayout() {
   const animationRef = useRef<LottieView>(null);
   const segments = useSegments();
   const router = useRouter();
+
+  // Configuration des filtres pour l'animation Lottie[cite: 15]
+  const lottieFilters = useMemo(() => [
+    // --- Remplace les éléments "VERTS" par la couleur primaire du thème ---
+    { keypath: "loading", color: theme.primary },
+    { keypath: "top-btn", color: theme.primary },
+    { keypath: "right-btn", color: theme.primary },
+    { keypath: "left-btn", color: theme.primary },
+    { keypath: "bottom-btn", color: theme.primary },
+
+    // --- Remplace les éléments "BLANCS" par la couleur de texte (devient sombre en Light mode) ---
+    { keypath: "circle", color: theme.textPrimary },
+    { keypath: "G", color: theme.textPrimary },
+    { keypath: "P", color: theme.textPrimary },
+    { keypath: "cross", color: theme.textPrimary },
+    { keypath: "cross 2", color: theme.textPrimary },
+    { keypath: "YOUR GAMING STORY Outlines", color: theme.textPrimary },
+    { keypath: "GPLAYED", color: theme.textPrimary },
+  ], [theme]);
 
   useEffect(() => {
     SplashScreen.hideAsync();
@@ -83,6 +101,7 @@ function MainLayout() {
             source={require('../assets/animations/splash.json')}
             autoPlay
             loop={false}
+            colorFilters={lottieFilters} // Application des couleurs dynamiques[cite: 15]
             onAnimationFinish={onAnimationFinish}
             style={{ width: '60%', aspectRatio: 1 }}
           />

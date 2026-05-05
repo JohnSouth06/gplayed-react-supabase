@@ -2,9 +2,10 @@
 
 export const MintTheme = {
   bg: '#1e1e1e',
+  logo: '#ffffff',
   surface: '#2a2a2a',
   surfaceHigh: '#333333',
-  primary: '#4CE5AE', // Vert menthe
+  primary: '#4CE5AE',
   primaryDim: '#1e3a34',
   wishlist: '#FF6B6B',
   wishlistDim: '#3a1e1e',
@@ -21,12 +22,13 @@ export const MintTheme = {
 
 export const DarkTheme = {
   bg: '#000000',
+  logo: '#ffffff',
   surface: '#121212',
   surfaceHigh: '#1f1f1f',
-  primary: '#bb86fc', // Violet
-  primaryDim: '#2d1a4d',
-  wishlist: '#03dac6',
-  wishlistDim: '#012e2a',
+  primary: '#4CE5AE', 
+  primaryDim: '#1e3a34',
+  wishlist: '#FF6B6B',
+  wishlistDim: '#3a1e1e',
   textPrimary: '#ffffff',
   textSecondary: '#aaaaaa',
   textMuted: '#666666',
@@ -40,12 +42,13 @@ export const DarkTheme = {
 
 export const LightTheme = {
   bg: '#ffffff',
+  logo: '#1e1e1e',
   surface: '#f5f5f5',
   surfaceHigh: '#e8e8e8',
-  primary: '#6200ee', // Indigo
-  primaryDim: '#e8daff',
-  wishlist: '#018786',
-  wishlistDim: '#e0f2f1',
+  primary: '#34b183',
+  primaryDim: '#1e3a34',
+  wishlist: '#FF6B6B',
+  wishlistDim: '#3a1e1e',
   textPrimary: '#1e1e1e',
   textSecondary: '#555555',
   textMuted: '#999999',
