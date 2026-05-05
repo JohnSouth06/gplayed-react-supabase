@@ -216,7 +216,7 @@ export default function WishlistScreen() {
   const deleteGame = () => {
     Alert.alert(
       "Retirer de la wishlist ?",
-      "Voulez-vous vraiment retirer ce titre de vos envies ?",
+      "Voulez-vous vraiment retirer ce titre de votre wishlist ?",
       [
         { text: "Annuler", style: "cancel" },
         { text: "Retirer", style: "destructive", onPress: async () => { await removeGameFromCollection(selectedGame.id); setDetailModalVisible(false); fetchGames(); } }
@@ -241,7 +241,7 @@ export default function WishlistScreen() {
     const count = selectedIds.size;
     Alert.alert(
       `Retirer ${count} jeu${count > 1 ? 'x' : ''} ?`,
-      `Voulez-vous vraiment retirer ${count > 1 ? 'ces titres' : 'ce titre'} de la wishlist ?`,
+      `Voulez-vous vraiment retirer ${count > 1 ? 'ces titres' : 'ce titre'} de votre wishlist ?`,
       [
         { text: "Annuler", style: "cancel" },
         { text: "Retirer", style: "destructive", onPress: async () => {
