@@ -9,8 +9,9 @@ import { ThemeProvider, useCustomTheme } from '../context/ThemeContext';
 
 SplashScreen.preventAutoHideAsync();
 
+
 function MainLayout() {
-  const { theme } = useCustomTheme(); // Récupère le thème actif (Mint, Dark, ou Light)
+  const { theme } = useCustomTheme();
   const [session, setSession] = useState<Session | null>(null);
   const [initialized, setInitialized] = useState(false);
   const [minimumTimeElapsed, setMinimumTimeElapsed] = useState(false);
@@ -19,25 +20,6 @@ function MainLayout() {
   const animationRef = useRef<LottieView>(null);
   const segments = useSegments();
   const router = useRouter();
-
-  // Configuration des filtres pour l'animation Lottie[cite: 15]
-  const lottieFilters = useMemo(() => [
-    // --- Remplace les éléments "VERTS" par la couleur primaire du thème ---
-    { keypath: "loading", color: theme.primary },
-    { keypath: "top-btn", color: theme.primary },
-    { keypath: "right-btn", color: theme.primary },
-    { keypath: "left-btn", color: theme.primary },
-    { keypath: "bottom-btn", color: theme.primary },
-
-    // --- Remplace les éléments "BLANCS" par la couleur de texte (devient sombre en Light mode) ---
-    { keypath: "circle", color: theme.textPrimary },
-    { keypath: "G", color: theme.textPrimary },
-    { keypath: "P", color: theme.textPrimary },
-    { keypath: "cross", color: theme.textPrimary },
-    { keypath: "cross 2", color: theme.textPrimary },
-    { keypath: "YOUR GAMING STORY Outlines", color: theme.textPrimary },
-    { keypath: "GPLAYED", color: theme.textPrimary },
-  ], [theme]);
 
   useEffect(() => {
     SplashScreen.hideAsync();
@@ -76,6 +58,60 @@ function MainLayout() {
     }
   }, [session, initialized, segments]);
 
+
+  const hexToLottie = (hex: string) => {
+    const r = parseInt(hex.slice(1, 3), 16) / 255;
+    const g = parseInt(hex.slice(3, 5), 16) / 255;
+    const b = parseInt(hex.slice(5, 7), 16) / 255;
+    return [r, g, b, 1];
+  };
+
+  const dynamicSplash = useMemo(() => {
+  const json = JSON.parse(JSON.stringify(require('../assets/animations/splash.json')));
+  const primaryLottie = hexToLottie(theme.primary);
+  const textLottie = hexToLottie(theme.textPrimary);
+
+  json.assets[0].layers.forEach((layer: any) => {
+    if (layer.nm === 'loading') layer.sc = theme.primary;
+
+    if (layer.nm === 'gplayed') layer.sc = theme.textPrimary;
+
+    if (layer.nm === 'circle' && layer.shapes) {
+      layer.shapes[0].it[1].c.k = textLottie;
+    }
+
+    if (layer.nm === 'slogan' && layer.shapes) {
+      layer.shapes.forEach((group: any) => {
+        group.it?.forEach((item: any) => {
+          if (item.ty === 'fl') item.c.k = textLottie;
+        });
+      });
+    }
+  });
+
+  json.assets[1].layers.forEach((layer: any) => {
+    if (layer.nm === 'cross_1' && layer.shapes) {
+      layer.shapes[0].it[1].c.k = textLottie;
+    }
+
+    if (layer.nm === 'G' || layer.nm === 'P') {
+      layer.sc = theme.textPrimary; 
+      
+      if (layer.ef?.[0]?.ef?.[3]?.v?.k) {
+        layer.ef[0].ef[3].v.k = textLottie;
+      }
+    }
+  });
+
+  json.assets[2].layers.forEach((layer: any) => {
+    if (layer.shapes?.[0]?.it?.[1]?.c?.k) {
+      layer.shapes[0].it[1].c.k = primaryLottie;
+    }
+  });
+
+  return json;
+}, [theme]);
+  
   const onAnimationFinish = () => {
     if (!minimumTimeElapsed || !initialized) {
       animationRef.current?.play(45, 90);
@@ -89,7 +125,7 @@ function MainLayout() {
   return (
     <View style={{ flex: 1, backgroundColor: theme.bg }}>
       <Stack>
-        <Stack.Screen name="(auth)/LoginScreen" options={{ headerShown: false }} />
+        <Stack.Screen name="(auth)/LoginScreen" />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
@@ -97,11 +133,11 @@ function MainLayout() {
       {!showApp && (
         <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.bg, alignItems: 'center', justifyContent: 'center', zIndex: 999 }]}>
           <LottieView
+            key={theme.primary}
             ref={animationRef}
-            source={require('../assets/animations/splash.json')}
+            source={dynamicSplash}
             autoPlay
             loop={false}
-            colorFilters={lottieFilters} // Application des couleurs dynamiques[cite: 15]
             onAnimationFinish={onAnimationFinish}
             style={{ width: '60%', aspectRatio: 1 }}
           />

@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useColorScheme } from 'react-native';
 import { DarkTheme, LightTheme, MintTheme } from '../constants/Theme';
 
 type ThemeType = 'light' | 'dark' | 'mint';
@@ -11,13 +12,16 @@ const ThemeContext = createContext({
 });
 
 export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
+  const systemScheme = useColorScheme();
   const [themeType, setThemeType] = useState<ThemeType>('mint');
 
+  // Charger la préférence au démarrage
   useEffect(() => {
-    // Charger la préférence sauvegardée au démarrage
-    AsyncStorage.getItem('user-theme').then(saved => {
+    const loadTheme = async () => {
+      const saved = await AsyncStorage.getItem('user-theme');
       if (saved) setThemeType(saved as ThemeType);
-    });
+    };
+    loadTheme();
   }, []);
 
   const theme = themeType === 'mint' ? MintTheme : 
