@@ -434,7 +434,7 @@ const getStatusColor = (displayStatus: string) => {
         }
       />
 
-{/* --- MODALE DE DÉTAIL --- */}
+      {/* --- MODALE DE DÉTAIL --- */}
       <Modal visible={detailModalVisible} animationType="slide" transparent>
         <View style={styles.detailModalOverlay}>
           <View style={styles.detailModalContent}>

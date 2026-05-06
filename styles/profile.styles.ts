@@ -35,6 +35,10 @@ export const getProfileStyles = (theme: any, accentColor: string, accentColorDim
       menuText: { flex: 1, color: theme.textPrimary, fontSize: 14, fontWeight: '600' },
       logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 32, paddingVertical: 12 },
       logoutLabel: { color: theme.textMuted, fontSize: 14, fontWeight: '600' },
+      segmentedContainer: { flexDirection: 'row', padding: 8, gap: 8, alignItems: 'center', justifyContent: 'space-between' },
+      segmentedButton: {  flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 12, gap: 4, position: 'relative' },
+      segmentedLabel: { fontSize: 11, fontWeight: '600' },
+      activeIndicator: { position: 'absolute', bottom: 4, width: 4, height: 4, borderRadius: 2 }
     })
   };
 };

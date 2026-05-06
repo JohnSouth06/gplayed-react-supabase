@@ -10,6 +10,7 @@ import {
   ActivityIndicator, Alert, Image, ScrollView, Switch,
   Text, TouchableOpacity, View
 } from 'react-native';
+import { DarkTheme, LightTheme, MintTheme } from '../constants/Theme';
 import { useCustomTheme } from '../context/ThemeContext';
 import { getProfileStyles } from '../styles/profile.styles';
 
@@ -131,6 +132,61 @@ export default function ProfileScreen() {
   </TouchableOpacity>
 );
 
+const ThemeToggle = () => {
+  const options = [
+    { 
+      id: 'light', 
+      label: 'Clair', 
+      icon: 'white-balance-sunny', 
+      color: LightTheme.primary
+    },
+    { 
+      id: 'dark', 
+      label: 'Sombre', 
+      icon: 'moon-waning-crescent', 
+      color: DarkTheme.primary
+    },
+    { 
+      id: 'mint', 
+      label: 'Mint', 
+      icon: 'leaf', 
+      color: MintTheme.primary 
+    },
+  ];
+
+  return (
+    <View style={styles.segmentedContainer}>
+      {options.map((opt) => {
+        const isActive = themeType === opt.id;
+        return (
+          <TouchableOpacity
+            key={opt.id}
+            style={[
+              styles.segmentedButton,
+              isActive && { backgroundColor: `${opt.color}20` }
+            ]}
+            onPress={() => setTheme(opt.id as any)}
+            activeOpacity={0.8}
+          >
+            <MaterialCommunityIcons 
+              name={opt.icon as any} 
+              size={18} 
+              color={isActive ? opt.color : currentTheme.textMuted} 
+            />
+            <Text style={[
+              styles.segmentedLabel, 
+              { color: isActive ? currentTheme.textPrimary : currentTheme.textMuted }
+            ]}>
+              {opt.label}
+            </Text>
+            {isActive && <View style={[styles.activeIndicator, { backgroundColor: opt.color }]} />}
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+};
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <Stack.Screen options={{ 
@@ -161,35 +217,7 @@ export default function ProfileScreen() {
 
       <SectionTitle label="Apparence" icon="palette-outline" />
       <View style={styles.card}>
-        <ThemeOption
-          label="Thème Mint (Original)"
-          isActive={themeType === 'mint'}
-          onPress={() => setTheme('mint')}
-          color="#4CE5AE" // La couleur de votre thème Mint[cite: 14]
-          currentTheme={currentTheme}
-          accentColor={accentColor}
-        />
-        {/* Séparateur visuel */}
-        <View style={{ height: 1, backgroundColor: currentTheme.border, marginLeft: 50 }} />
-        
-        <ThemeOption
-          label="Mode Sombre"
-          isActive={themeType === 'dark'}
-          onPress={() => setTheme('dark')}
-          color="#bb86fc" // La couleur primary de DarkTheme[cite: 14]
-          currentTheme={currentTheme}
-          accentColor={accentColor}
-        />
-        <View style={{ height: 1, backgroundColor: currentTheme.border, marginLeft: 50 }} />
-
-        <ThemeOption
-          label="Mode Clair"
-          isActive={themeType === 'light'}
-          onPress={() => setTheme('light')}
-          color="#6200ee" // La couleur primary de LightTheme[cite: 14]
-          currentTheme={currentTheme}
-          accentColor={accentColor}
-        />
+        <ThemeToggle />
       </View>
 
       <SectionTitle label="Préférences" icon="tune-variant" />
