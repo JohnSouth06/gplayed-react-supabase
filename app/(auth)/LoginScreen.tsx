@@ -1,35 +1,25 @@
 import { resetPassword, signInUser, signInWithOAuth, signUpUser } from '@/api/auth';
 import { FontAwesome5, FontAwesome6, MaterialCommunityIcons } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Modal,
   Platform,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View
 } from 'react-native';
 import Logo from '../../assets/images/logo.svg';
-
-// ─── Design Tokens (partagés avec index.tsx) ────────────────────────────────
-const C = {
-  bg: '#1e1e1e',
-  surface: '#272727',
-  surfaceHigh: '#383838',
-  border: '#3D3D3D',
-  primary: '#4CE5AE',
-  primaryDim: 'rgba(76,229,174,0.12)',
-  textPrimary: '#F0F0F0',
-  textSecondary: '#7A8C86',
-  textMuted: '#677a73',
-  discord: '#5865F2',
-};
+import { useCustomTheme } from '../../context/ThemeContext';
+import { getLoginStyles } from '../../styles/LoginScreen.styles';
 
 export default function LoginScreen() {
+  const { theme } = useCustomTheme();
+  const { styles, inputStyles } = useMemo(() => getLoginStyles(theme), [theme]);
+
   const [isSignUp, setIsSignUp] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [forgotModalVisible, setForgotModalVisible] = useState(false);
@@ -100,7 +90,13 @@ export default function LoginScreen() {
 
         {/* ─── LOGO + HEADER ──────────────────────────────────── */}
         <View style={styles.logoArea}>
-          <Logo width={200} height={52} style={styles.logo} resizeMode="contain" />
+          <Logo 
+            width={200} 
+            height={52} 
+            style={styles.logo} 
+            color={theme.logo} 
+            fill={theme.primary}
+          />
           <View style={styles.taglineRow}>
             <Text style={styles.tagline}>
               {isSignUp ? 'Créez votre compte' : 'Your Gaming Story'}
@@ -113,6 +109,8 @@ export default function LoginScreen() {
 
           {isSignUp && (
             <InputField
+              theme={theme}
+              inputStyles={inputStyles}
               icon="account-outline"
               placeholder="Nom d'utilisateur"
               value={username}
@@ -122,6 +120,8 @@ export default function LoginScreen() {
           )}
 
           <InputField
+            theme={theme}
+            inputStyles={inputStyles}
             icon="email-outline"
             placeholder="Adresse email"
             value={email}
@@ -131,6 +131,8 @@ export default function LoginScreen() {
           />
 
           <InputField
+            theme={theme}
+            inputStyles={inputStyles}
             icon="lock-outline"
             placeholder="Mot de passe"
             value={password}
@@ -158,13 +160,13 @@ export default function LoginScreen() {
           activeOpacity={0.85}
         >
           {isLoading ? (
-            <ActivityIndicator color={C.bg} />
+            <ActivityIndicator color={theme.bg} />
           ) : (
             <>
               <Text style={styles.mainButtonText}>
                 {isSignUp ? "S'INSCRIRE" : "SE CONNECTER"}
               </Text>
-              <MaterialCommunityIcons name="arrow-right" size={20} color={C.bg} />
+              <MaterialCommunityIcons name="arrow-right" size={20} color={theme.bg} />
             </>
           )}
         </TouchableOpacity>
@@ -193,7 +195,7 @@ export default function LoginScreen() {
           activeOpacity={0.85}
         >
           <View style={styles.socialIconWrap}>
-            <FontAwesome5 name="google" size={16} color={C.bg} />
+            <FontAwesome5 name="google" size={16} color={theme.bg} />
           </View>
           <Text style={styles.socialButtonText}>Continuer avec Google</Text>
         </TouchableOpacity>
@@ -217,10 +219,10 @@ export default function LoginScreen() {
           <View style={styles.modalContent}>
             <View style={styles.modalHeaderRow}>
               <View style={styles.modalIconWrap}>
-                <MaterialCommunityIcons name="lock-reset" size={22} color={C.primary} />
+                <MaterialCommunityIcons name="lock-reset" size={22} color={theme.primary} />
               </View>
               <TouchableOpacity onPress={() => setForgotModalVisible(false)} style={styles.modalCloseBtn}>
-                <MaterialCommunityIcons name="close" size={18} color={C.textSecondary} />
+                <MaterialCommunityIcons name="close" size={18} color={theme.textSecondary} />
               </TouchableOpacity>
             </View>
 
@@ -230,6 +232,8 @@ export default function LoginScreen() {
             </Text>
 
             <InputField
+              theme={theme}
+              inputStyles={inputStyles}
               icon="email-outline"
               placeholder="Adresse email"
               value={forgotEmail}
@@ -252,7 +256,7 @@ export default function LoginScreen() {
                 disabled={isSendingReset}
               >
                 {isSendingReset
-                  ? <ActivityIndicator color={C.bg} />
+                  ? <ActivityIndicator color={theme.bg} />
                   : <Text style={styles.modalBtnConfirmText}>Envoyer</Text>
                 }
               </TouchableOpacity>
@@ -266,30 +270,17 @@ export default function LoginScreen() {
 }
 
 // ─── Composant InputField ────────────────────────────────────────────────────
-type InputFieldProps = {
-  icon: string;
-  placeholder: string;
-  value: string;
-  onChangeText: (t: string) => void;
-  secureTextEntry?: boolean;
-  autoCapitalize?: 'none' | 'sentences';
-  keyboardType?: 'default' | 'email-address';
-  rightIcon?: string;
-  onRightIconPress?: () => void;
-  dark?: boolean;
-};
-
 const InputField = ({
-  icon, placeholder, value, onChangeText,
+  theme, inputStyles, icon, placeholder, value, onChangeText,
   secureTextEntry, autoCapitalize, keyboardType,
   rightIcon, onRightIconPress, dark
-}: InputFieldProps) => (
+}: any) => (
   <View style={[inputStyles.wrapper, dark && inputStyles.wrapperDark]}>
-    <MaterialCommunityIcons name={icon as any} size={18} color={C.textSecondary} />
+    <MaterialCommunityIcons name={icon} size={18} color={theme.textSecondary} />
     <TextInput
       style={inputStyles.input}
       placeholder={placeholder}
-      placeholderTextColor={C.textMuted}
+      placeholderTextColor={theme.textMuted}
       value={value}
       onChangeText={onChangeText}
       secureTextEntry={secureTextEntry}
@@ -298,279 +289,8 @@ const InputField = ({
     />
     {rightIcon && (
       <TouchableOpacity onPress={onRightIconPress} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-        <MaterialCommunityIcons name={rightIcon as any} size={18} color={C.textSecondary} />
+        <MaterialCommunityIcons name={rightIcon} size={18} color={theme.textSecondary} />
       </TouchableOpacity>
     )}
   </View>
 );
-
-const inputStyles = StyleSheet.create({
-  wrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: C.surface,
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    height: 52,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: C.border,
-    gap: 12,
-  },
-  wrapperDark: {
-    backgroundColor: C.bg,
-  },
-  input: {
-    flex: 1,
-    color: C.textPrimary,
-    fontSize: 15,
-  },
-});
-
-// ─── Styles ──────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: C.bg,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 48,
-  },
-
-  // LOGO
-  logoArea: {
-    alignItems: 'center',
-    marginBottom: 36,
-    gap: 8,
-  },
-  logo: {
-    alignSelf: 'center',
-  },
-  taglineRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  taglineAccent: {
-    width: 4,
-    height: 18,
-    backgroundColor: C.primary,
-    borderRadius: 2,
-  },
-  tagline: {
-    fontSize: 15,
-    color: C.textSecondary,
-    fontWeight: '400',
-    letterSpacing: 0.3,
-  },
-
-  // FORM CARD
-  formCard: {
-    backgroundColor: C.surface,
-    borderRadius: 20,
-    padding: 18,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: C.border,
-  },
-
-  // FORGOT
-  forgotButton: {
-    alignSelf: 'flex-end',
-    paddingVertical: 4,
-    marginTop: -4,
-    marginBottom: 4,
-  },
-  forgotText: {
-    color: C.textSecondary,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-
-  // MAIN BUTTON
-  mainButton: {
-    backgroundColor: C.primary,
-    borderRadius: 16,
-    height: 54,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    marginBottom: 16,
-    shadowColor: C.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  mainButtonText: {
-    color: C.bg,
-    fontSize: 15,
-    fontWeight: '600',
-    letterSpacing: 1,
-  },
-
-  // TOGGLE
-  toggleButton: {
-    alignItems: 'center',
-    paddingVertical: 6,
-  },
-  toggleText: {
-    color: C.textSecondary,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  toggleTextAccent: {
-    color: C.primary,
-    fontWeight: '700',
-  },
-
-  // DIVIDER
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 24,
-    gap: 12,
-  },
-  divider: {
-    flex: 1,
-    height: 1,
-    backgroundColor: C.border,
-  },
-  dividerText: {
-    color: C.textMuted,
-    fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-
-  // SOCIAL BUTTONS
-  socialButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: C.surface,
-    borderRadius: 16,
-    height: 52,
-    paddingHorizontal: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: C.border,
-    gap: 14,
-  },
-  discordButton: {
-    backgroundColor: C.discord,
-    borderColor: C.discord,
-  },
-  socialIconWrap: {
-    width: 30,
-    height: 30,
-    borderRadius: 8,
-    backgroundColor: C.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  discordIconWrap: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
-  },
-  socialButtonText: {
-    color: C.textPrimary,
-    fontSize: 14,
-    fontWeight: '700',
-    flex: 1,
-  },
-
-  // MODAL
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.75)',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  modalContent: {
-    backgroundColor: C.surface,
-    borderRadius: 22,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: C.border,
-  },
-  modalHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  modalIconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    backgroundColor: C.primaryDim,
-    borderWidth: 1,
-    borderColor: `${C.primary}44`,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modalCloseBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: C.surfaceHigh,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modalTitle: {
-    color: C.textPrimary,
-    fontSize: 20,
-    fontWeight: '600',
-    marginBottom: 6,
-    letterSpacing: 0.3,
-  },
-  modalText: {
-    color: C.textSecondary,
-    fontSize: 13,
-    lineHeight: 20,
-    marginBottom: 20,
-  },
-  modalActions: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 4,
-  },
-  modalBtnCancel: {
-    flex: 1,
-    height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: C.border,
-    backgroundColor: C.surfaceHigh,
-  },
-  modalBtnCancelText: {
-    color: C.textSecondary,
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  modalBtnConfirm: {
-    flex: 1,
-    height: 48,
-    backgroundColor: C.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 12,
-    shadowColor: C.primary,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  modalBtnConfirmText: {
-    color: C.bg,
-    fontWeight: '600',
-    fontSize: 14,
-    letterSpacing: 0.5,
-  },
-});

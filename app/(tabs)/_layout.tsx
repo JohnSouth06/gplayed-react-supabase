@@ -5,11 +5,11 @@ import React, { useEffect, useState } from 'react';
 import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Logo from '../../assets/images/logo.svg';
-import { useCustomTheme } from '../../context/ThemeContext'; // NOUVEAU
+import { useCustomTheme } from '../../context/ThemeContext';
 
 // ─── Composant Avatar dans le header ────────────────────────────────────────
 function HeaderAvatar() {
-  const { theme: currentTheme } = useCustomTheme(); // NOUVEAU
+  const { theme: currentTheme } = useCustomTheme();
   const router = useRouter();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [initials, setInitials] = useState<string>('');

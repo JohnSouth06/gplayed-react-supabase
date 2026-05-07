@@ -125,7 +125,7 @@ function MainLayout() {
   return (
     <View style={{ flex: 1, backgroundColor: theme.bg }}>
       <Stack>
-        <Stack.Screen name="(auth)/LoginScreen" />
+        <Stack.Screen name="(auth)/LoginScreen" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
