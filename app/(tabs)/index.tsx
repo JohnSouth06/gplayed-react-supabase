@@ -2,6 +2,7 @@
 import { supabase } from '@/lib/supabase';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Shadow } from 'react-native-shadow-2';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
@@ -310,22 +311,51 @@ const getStatusColor = (displayStatus: string) => {
             </View>
 
             <View style={styles.tabsContainer}>
-              {(['Physique', 'Numérique'] as const).map((format) => (
-                <TouchableOpacity
-                  key={format}
-                  style={[styles.tab, activeFormat === format && styles.activeTab]}
-                  onPress={() => { setActiveFormat(format); setCollectionSearchQuery(''); }}
-                >
-                  <MaterialCommunityIcons
-                    name={format === 'Physique' ? 'disc' : 'cloud-download-outline'}
-                    size={17}
-                    color={activeFormat === format ? currentTheme.bg : currentTheme.textSecondary}
-                  />
-                  <Text style={[styles.tabText, activeFormat === format && styles.activeTabText]}>
-                    {format}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              {(['Physique', 'Numérique'] as const).map((format) => {
+                const isActive = activeFormat === format; // On vérifie si l'onglet est actif
+
+                return (
+                  <TouchableOpacity
+                    key={format}
+                    style={{ flex: 1 }} // Important pour que l'ombre occupe tout l'espace
+                    onPress={() => { setActiveFormat(format); setCollectionSearchQuery(''); }}
+                    activeOpacity={0.7}
+                  >
+                    {isActive ? (
+                      /* ÉTAT ACTIF : On enveloppe avec Shadow */
+                      <Shadow
+                        distance={8}
+                        startColor={`${accentColor}35`} // Lueur de la couleur accentuée
+                        containerStyle={{ flex: 1 }}
+                        style={{ width: '100%', borderRadius: 11 }}
+                      >
+                        <View style={[styles.tab, styles.activeTab]}>
+                          <MaterialCommunityIcons
+                            name={format === 'Physique' ? 'disc' : 'cloud-download-outline'}
+                            size={17}
+                            color={currentTheme.bg}
+                          />
+                          <Text style={[styles.tabText, styles.activeTabText]}>
+                            {format}
+                          </Text>
+                        </View>
+                      </Shadow>
+                    ) : (
+                      /* ÉTAT INACTIF : Rendu classique sans ombre */
+                      <View style={styles.tab}>
+                        <MaterialCommunityIcons
+                          name={format === 'Physique' ? 'disc' : 'cloud-download-outline'}
+                          size={17}
+                          color={currentTheme.textSecondary}
+                        />
+                        <Text style={styles.tabText}>
+                          {format}
+                        </Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
             </View>
 
             <View style={styles.searchRow}>
@@ -740,9 +770,15 @@ const getStatusColor = (displayStatus: string) => {
       )}
 
       {!selectionMode && (
-        <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)} activeOpacity={0.85}>
-          <MaterialCommunityIcons name="plus" size={28} color={currentTheme.bg} />
-        </TouchableOpacity>
+        <Shadow
+          distance={15}
+          startColor={`${accentColor}40`} // Lueur diffuse de la couleur accent
+          offset={[0, 0]} // Centré pour un effet de halo tout autour
+          containerStyle={styles.fabContainer} >
+          <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)} activeOpacity={0.85}>
+            <MaterialCommunityIcons name="plus" size={28} color={currentTheme.bg} />
+          </TouchableOpacity>
+        </Shadow>
       )}
 
     </View>

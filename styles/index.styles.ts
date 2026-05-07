@@ -161,11 +161,6 @@ export const getBaseStyles = (theme: typeof C, accentColor: string, accentColorD
     },
     activeTab: {
       backgroundColor: accentColor,
-      shadowColor: accentColor,
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.4,
-      shadowRadius: 10,
-      elevation: 6,
     },
     tabText: {
       color: theme.textSecondary,
@@ -314,20 +309,17 @@ export const getBaseStyles = (theme: typeof C, accentColor: string, accentColorD
 
     // FAB
     fab: {
-      position: 'absolute',
-      bottom: 32,
-      right: 24,
       backgroundColor: accentColor,
       width: 60,
       height: 60,
       borderRadius: 18,
       justifyContent: 'center',
       alignItems: 'center',
-      elevation: 10,
-      shadowColor: accentColor,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.5,
-      shadowRadius: 14,
+    },
+    fabContainer: {
+      position: 'absolute',
+      bottom: 32,
+      right: 24,
     },
 
     // DETAIL MODAL

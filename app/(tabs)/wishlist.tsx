@@ -1,6 +1,7 @@
 // app/(tabs)/wishlist.tsx
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Shadow } from 'react-native-shadow-2';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
@@ -338,22 +339,51 @@ export default function WishlistScreen() {
             </View>
 
             <View style={defaultStyles.tabsContainer}>
-              {(['Physique', 'Numérique'] as const).map((format) => (
-                <TouchableOpacity
-                  key={format}
-                  style={[defaultStyles.tab, activeFormat === format && defaultStyles.activeTab]}
-                  onPress={() => { setActiveFormat(format); setCollectionSearchQuery(''); }}
-                >
-                  <MaterialCommunityIcons
-                    name={format === 'Physique' ? 'disc' : 'cloud-download-outline'}
-                    size={17}
-                    color={activeFormat === format ? currentTheme.bg : currentTheme.textSecondary}
-                  />
-                  <Text style={[defaultStyles.tabText, activeFormat === format && defaultStyles.activeTabText]}>
-                    {format}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              {(['Physique', 'Numérique'] as const).map((format) => {
+                const isActive = activeFormat === format;
+
+                return (
+                  <TouchableOpacity
+                    key={format}
+                    style={{ flex: 1 }}
+                    onPress={() => { setActiveFormat(format); setCollectionSearchQuery(''); }}
+                    activeOpacity={0.7}
+                  >
+                    {isActive ? (
+                      /* Onglet Actif avec Lueur */
+                      <Shadow
+                        distance={8}
+                        startColor={`${accentColor}35`}
+                        containerStyle={{ flex: 1 }}
+                        style={{ width: '100%', borderRadius: 11 }}
+                      >
+                        <View style={[defaultStyles.tab, defaultStyles.activeTab]}>
+                          <MaterialCommunityIcons
+                            name={format === 'Physique' ? 'disc' : 'cloud-download-outline'}
+                            size={17}
+                            color={currentTheme.bg}
+                          />
+                          <Text style={[defaultStyles.tabText, defaultStyles.activeTabText]}>
+                            {format}
+                          </Text>
+                        </View>
+                      </Shadow>
+                    ) : (
+                      /* Onglet Inactif */
+                      <View style={defaultStyles.tab}>
+                        <MaterialCommunityIcons
+                          name={format === 'Physique' ? 'disc' : 'cloud-download-outline'}
+                          size={17}
+                          color={currentTheme.textSecondary}
+                        />
+                        <Text style={defaultStyles.tabText}>
+                          {format}
+                        </Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
             </View>
 
             <View style={defaultStyles.searchRow}>
@@ -771,9 +801,20 @@ export default function WishlistScreen() {
       )}
 
       {!selectionMode && (
-        <TouchableOpacity style={defaultStyles.fab} onPress={() => setModalVisible(true)} activeOpacity={0.85}>
-          <MaterialCommunityIcons name="heart-plus" size={28} color={currentTheme.bg} />
-        </TouchableOpacity>
+        <Shadow
+          distance={15}
+          startColor={`${accentColor}40`} // Lueur diffuse de la couleur accentuée
+          offset={[0, 0]}
+          containerStyle={defaultStyles.fabContainer} // Utilise le style de positionnement
+        >
+          <TouchableOpacity 
+            style={defaultStyles.fab} 
+            onPress={() => setModalVisible(true)} 
+            activeOpacity={0.85}
+          >
+            <MaterialCommunityIcons name="heart-plus" size={28} color={currentTheme.bg} />
+          </TouchableOpacity>
+        </Shadow>
       )}
 
     </View>
