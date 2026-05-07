@@ -1,4 +1,4 @@
-// app/UpdatePasswordScreen.tsx
+// app/reset_password.tsx
 import { updateUserPassword } from '@/api/auth';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
@@ -10,7 +10,7 @@ import {
   Text, TextInput, TouchableOpacity, View
 } from 'react-native';
 import { useCustomTheme } from '../context/ThemeContext';
-import { getUpdatePasswordStyles } from '../styles/UpdatePasswordScreen.styles';
+import { getUpdatePasswordStyles } from '../styles/reset_password.styles';
 
 export default function UpdatePasswordScreen() {
   const { theme: currentTheme } = useCustomTheme(); // Récupération du thème dynamique

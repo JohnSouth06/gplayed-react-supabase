@@ -23,6 +23,19 @@ function MainLayout() {
   const router = useRouter();
 
   useEffect(() => {
+    if (!initialized) return;
+
+    const inAuthGroup = segments[0] === '(auth)';
+    const isResetPage = segments[0] === 'reset_password';
+
+    if (!session && !inAuthGroup && !isResetPage) {
+      router.replace('/(auth)/LoginScreen');
+    } else if (session && inAuthGroup) {
+      router.replace('/(tabs)');
+    }
+  }, [session, initialized, segments]);
+
+    useEffect(() => {
     SplashScreen.hideAsync();
 
     const timer = setTimeout(() => {
@@ -35,10 +48,10 @@ function MainLayout() {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setSession(session);
+
       if (event === 'PASSWORD_RECOVERY') {
         router.replace('/reset_password');
-      } else {
-        setSession(session);
       }
     });
 
@@ -47,17 +60,6 @@ function MainLayout() {
       clearTimeout(timer); 
     };
   }, []);
-
-  useEffect(() => {
-    if (!initialized) return;
-
-    const inAuthGroup = segments[0] === '(auth)';
-    if (!session && !inAuthGroup) {
-      router.replace('/(auth)/LoginScreen');
-    } else if (session && inAuthGroup) {
-      router.replace('/(tabs)');
-    }
-  }, [session, initialized, segments]);
 
 
   const hexToLottie = (hex: string) => {
