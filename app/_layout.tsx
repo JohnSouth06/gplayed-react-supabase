@@ -1,5 +1,5 @@
 import 'react-native-url-polyfill/auto';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '../lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';

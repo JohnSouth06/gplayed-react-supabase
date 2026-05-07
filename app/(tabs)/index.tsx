@@ -1,4 +1,5 @@
 // app/(tabs)/index.tsx
+import { supabase } from '@/lib/supabase';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
@@ -97,14 +98,8 @@ export default function DashboardScreen() {
   const fetchGames = async () => {
     try {
       setLoading(true);
-      // On peut tenter de récupérer la session actuelle manuellement si nécessaire
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) {
-        console.log("Pas de session active, attente...");
-        return;
-      }
-
-      const user = session.user;
+      const user = await getCurrentUser();
+        if (!user) return;
       const collectionData = await getUserCollection(user.id);
 
       const dashboardData = collectionData.filter(item => item.status !== 'wishlist');
