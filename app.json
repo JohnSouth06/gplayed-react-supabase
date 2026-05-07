@@ -2,21 +2,23 @@
   "expo": {
     "name": "GPlayed",
     "slug": "GPlayed",
-    "version": "1.0.0",
+    "version": "1.0.22",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "gplayed",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
+      "bundleIdentifier": "com.johnsouth06.gplayed",
       "supportsTablet": true
     },
     "android": {
+      "package": "com.johnsouth06.gplayed",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"

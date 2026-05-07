@@ -96,10 +96,16 @@ export default function DashboardScreen() {
 
   const fetchGames = async () => {
     try {
-      const user = await getCurrentUser();
-      if (!user) return;
+      setLoading(true);
+      // On peut tenter de récupérer la session actuelle manuellement si nécessaire
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        console.log("Pas de session active, attente...");
+        return;
+      }
+
+      const user = session.user;
       const collectionData = await getUserCollection(user.id);
-      setFullCollection(collectionData);
 
       const dashboardData = collectionData.filter(item => item.status !== 'wishlist');
       const formattedCollection = dashboardData.map(item => ({

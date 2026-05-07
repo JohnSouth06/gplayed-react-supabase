@@ -17,10 +17,6 @@ export const signUpUser = async (email: string, pass: string, username: string) 
 
   if (error) throw error;
 
-  // IMPORTANT : On a supprimé le bloc "insert" manuel dans 'profiles'.
-  // C'est désormais le trigger SQL qui s'occupe de créer la ligne 
-  // dans la table profiles de manière sécurisée et automatique.
-
   return data;
 };
 
@@ -34,7 +30,7 @@ export const signInUser = async (email: string, pass: string) => {
 // Réinitialisation du mot de passe par email
 export const resetPassword = async (email: string) => {
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: 'gplayed://reset-password',
+    redirectTo: 'gplayed://reset_password',
   });
   if (error) throw error;
 };
@@ -75,7 +71,11 @@ export const deleteAccount = async () => {
     .delete()
     .eq('id', user.id);
 
-  if (profileError) throw profileError;
+  if (profileError) {
+    console.error("Erreur lors de la suppression du profil:", profileError.message);
+    throw profileError;
+  }
   
+  // Une fois le trigger exécuté côté serveur, on déconnecte l'utilisateur localement
   await supabase.auth.signOut();
 };

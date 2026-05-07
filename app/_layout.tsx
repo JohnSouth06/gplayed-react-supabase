@@ -1,3 +1,4 @@
+import 'react-native-url-polyfill/auto';
 import { supabase } from '@/lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { Stack, useRouter, useSegments } from 'expo-router';
@@ -35,7 +36,7 @@ function MainLayout() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
-        router.replace('/(auth)/UpdatePasswordScreen');
+        router.replace('/reset_password');
       } else {
         setSession(session);
       }
@@ -60,6 +61,7 @@ function MainLayout() {
 
 
   const hexToLottie = (hex: string) => {
+    if (!hex || typeof hex !== 'string') return [0, 0, 0, 1];
     const r = parseInt(hex.slice(1, 3), 16) / 255;
     const g = parseInt(hex.slice(3, 5), 16) / 255;
     const b = parseInt(hex.slice(5, 7), 16) / 255;
@@ -67,50 +69,53 @@ function MainLayout() {
   };
 
   const dynamicSplash = useMemo(() => {
-  const json = JSON.parse(JSON.stringify(require('../assets/animations/splash.json')));
-  const primaryLottie = hexToLottie(theme.primary);
-  const textLottie = hexToLottie(theme.textPrimary);
+    try {
+      const splashData = require('../assets/animations/splash.json');
+      if (!splashData) return null;
 
-  json.assets[0].layers.forEach((layer: any) => {
-    if (layer.nm === 'loading') layer.sc = theme.primary;
+      const json = JSON.parse(JSON.stringify(splashData));
+      
+      // On s'assure d'avoir des couleurs de repli si le thème n'est pas encore chargé
+      const primaryHex = theme?.primary || '#000000';
+      const textPrimaryHex = theme?.textPrimary || '#FFFFFF';
+      
+      const primaryLottie = hexToLottie(primaryHex);
+      const textLottie = hexToLottie(textPrimaryHex);
 
-    if (layer.nm === 'gplayed') layer.sc = theme.textPrimary;
+      // Parcours sécurisé des assets et des calques
+      json.assets?.forEach((asset: any) => {
+        asset.layers?.forEach((layer: any) => {
+          if (layer.nm === 'loading') layer.sc = primaryHex;
+          if (layer.nm === 'gplayed') layer.sc = textPrimaryHex;
 
-    if (layer.nm === 'circle' && layer.shapes) {
-      layer.shapes[0].it[1].c.k = textLottie;
-    }
+          if (layer.nm === 'circle' && layer.shapes?.[0]?.it?.[1]?.c) {
+            layer.shapes[0].it[1].c.k = textLottie;
+          }
 
-    if (layer.nm === 'slogan' && layer.shapes) {
-      layer.shapes.forEach((group: any) => {
-        group.it?.forEach((item: any) => {
-          if (item.ty === 'fl') item.c.k = textLottie;
+          if (layer.nm === 'slogan' && layer.shapes) {
+            layer.shapes.forEach((group: any) => {
+              group.it?.forEach((item: any) => {
+                if (item.ty === 'fl' && item.c) item.c.k = textLottie;
+              });
+            });
+          }
+
+          if (layer.nm === 'G' || layer.nm === 'P') {
+            layer.sc = textPrimaryHex; 
+            if (layer.ef?.[0]?.ef?.[3]?.v?.k) {
+              layer.ef[0].ef[3].v.k = textLottie;
+            }
+          }
         });
       });
-    }
-  });
 
-  json.assets[1].layers.forEach((layer: any) => {
-    if (layer.nm === 'cross_1' && layer.shapes) {
-      layer.shapes[0].it[1].c.k = textLottie;
+      return json;
+    } catch (error) {
+      console.warn("Erreur lors de la génération du splash dynamique:", error);
+      // En cas d'erreur, on retourne le JSON brut sans modifications
+      return require('../assets/animations/splash.json');
     }
-
-    if (layer.nm === 'G' || layer.nm === 'P') {
-      layer.sc = theme.textPrimary; 
-      
-      if (layer.ef?.[0]?.ef?.[3]?.v?.k) {
-        layer.ef[0].ef[3].v.k = textLottie;
-      }
-    }
-  });
-
-  json.assets[2].layers.forEach((layer: any) => {
-    if (layer.shapes?.[0]?.it?.[1]?.c?.k) {
-      layer.shapes[0].it[1].c.k = primaryLottie;
-    }
-  });
-
-  return json;
-}, [theme]);
+  }, [theme]);
   
   const onAnimationFinish = () => {
     if (!minimumTimeElapsed || !initialized) {
@@ -130,7 +135,8 @@ function MainLayout() {
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
 
-      {!showApp && (
+      {/* On n'affiche le Splash que si l'app n'est pas prête ET que la source Lottie existe */}
+      {!showApp && dynamicSplash && (
         <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.bg, alignItems: 'center', justifyContent: 'center', zIndex: 999 }]}>
           <LottieView
             key={theme.primary}
