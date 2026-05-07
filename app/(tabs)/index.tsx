@@ -97,34 +97,42 @@ export default function DashboardScreen() {
 
   const fetchGames = async () => {
     try {
-      setLoading(true);
-      const user = await getCurrentUser();
-        if (!user) return;
-      const collectionData = await getUserCollection(user.id);
+    setLoading(true);
+    
+    const user = await getCurrentUser();
+    
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
-      const dashboardData = collectionData.filter(item => item.status !== 'wishlist');
-      const formattedCollection = dashboardData.map(item => ({
-        ...item,
-        title: item.game?.title || 'Titre inconnu',
-        cover_url: item.game?.cover_url,
-        genres: item.game?.genres,
-        rating_igdb: item.game?.rating_igdb,
-        platforms_list: item.game?.platforms_list,
-        release_date: item.game?.release_date,
-        developer: item.game?.developer,
-        publisher: item.game?.publisher,
-        game_modes: item.game?.game_modes,
-        engine: item.game?.engine,
-        description: item.game?.description,
-        screenshots: item.game?.screenshots,
-        displayFormat: MAP_SQL_TO_FORMAT[item.format as keyof typeof MAP_SQL_TO_FORMAT],
-        displayStatus: MAP_SQL_TO_STATUS[item.status as keyof typeof MAP_SQL_TO_STATUS]
-      }));
-      setMyGames(formattedCollection);
+    const collectionData = await getUserCollection(user.id);
+
+    const dashboardData = collectionData.filter(item => item.status !== 'wishlist');
+    const formattedCollection = dashboardData.map(item => ({
+      ...item,
+      title: item.game?.title || 'Titre inconnu',
+      cover_url: item.game?.cover_url,
+      genres: item.game?.genres,
+      rating_igdb: item.game?.rating_igdb,
+      platforms_list: item.game?.platforms_list,
+      release_date: item.game?.release_date,
+      developer: item.game?.developer,
+      publisher: item.game?.publisher,
+      game_modes: item.game?.game_modes,
+      engine: item.game?.engine,
+      description: item.game?.description,
+      screenshots: item.game?.screenshots,
+      displayFormat: MAP_SQL_TO_FORMAT[item.format as keyof typeof MAP_SQL_TO_FORMAT],
+      displayStatus: MAP_SQL_TO_STATUS[item.status as keyof typeof MAP_SQL_TO_STATUS]
+    }));
+    setMyGames(formattedCollection);
       const profileData = await getUserProfile(user.id);
       if (profileData) setUsername(profileData.username);
-    } catch (e: any) {
-      console.error("Erreur récupération:", e.message);
+      } catch (e: any) {
+      if (e.message !== 'Auth session missing!') {
+        console.error("Erreur récupération:", e.message);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
