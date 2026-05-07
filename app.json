@@ -2,7 +2,7 @@
   "expo": {
     "name": "GPlayed",
     "slug": "GPlayed",
-    "version": "1.0.22",
+    "version": "1.0.23",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "gplayed",
@@ -20,7 +20,7 @@
     "android": {
       "package": "com.johnsouth06.gplayed",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,

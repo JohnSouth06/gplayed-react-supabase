@@ -213,7 +213,7 @@ const ThemeToggle = () => {
       </View>
 
       <SectionTitle label="Sécurité" icon="shield-outline" />
-      <View style={styles.card}><MenuRow icon="lock-reset" label="Changer le mot de passe" onPress={() => router.push('/UpdatePasswordScreen')} showChevron /></View>
+      <View style={styles.card}><MenuRow icon="lock-reset" label="Changer le mot de passe" onPress={() => router.push('/reset_password')} showChevron /></View>
 
       <SectionTitle label="Apparence" icon="palette-outline" />
       <View style={styles.card}>

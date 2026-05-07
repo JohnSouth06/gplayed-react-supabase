@@ -1,3 +1,6 @@
+import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
+import { supabase } from '../../lib/supabase';
 import { resetPassword, signInUser, signInWithOAuth, signUpUser } from '@/api/auth';
 import { FontAwesome5, FontAwesome6, MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useState, useMemo } from 'react';
@@ -69,14 +72,41 @@ export default function LoginScreen() {
   const handleSocialLogin = async (provider: 'google' | 'discord') => {
     try {
       setIsLoading(true);
-      await signInWithOAuth(provider);
+      
+      // 1. Appeler l'API pour obtenir l'URL d'authentification
+      const data = await signInWithOAuth(provider);
+      
+      if (data?.url) {
+        // 2. Ouvrir le navigateur sécurisé
+        const result = await WebBrowser.openAuthSessionAsync(
+          data.url, 
+          'gplayed://auth' // Doit correspondre au scheme dans app.json
+        );
+
+        // 3. Si l'utilisateur revient avec succès, extraire les jetons
+        if (result.type === 'success' && result.url) {
+          const { queryParams } = Linking.parse(result.url);
+          
+          // Les jetons sont souvent dans le fragment (#) ou les query params
+          const accessToken = queryParams?.access_token || result.url.split('access_token=')[1]?.split('&')[0];
+          const refreshToken = queryParams?.refresh_token || result.url.split('refresh_token=')[1]?.split('&')[0];
+
+          if (accessToken && refreshToken) {
+            await supabase.auth.setSession({
+              access_token: accessToken as string,
+              refresh_token: refreshToken as string,
+            });
+            // La redirection vers /(tabs) sera gérée par votre _layout.tsx
+          }
+        }
+      }
     } catch (error: any) {
       alert(error.message);
     } finally {
       setIsLoading(false);
     }
   };
-
+  
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
