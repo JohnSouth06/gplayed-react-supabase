@@ -1,7 +1,6 @@
 // app/(tabs)/wishlist.tsx
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Shadow } from 'react-native-shadow-2';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
@@ -10,6 +9,7 @@ import {
   Text, TextInput, TouchableOpacity,
   View
 } from 'react-native';
+import { Shadow } from 'react-native-shadow-2';
 
 // Imports API
 import {
@@ -30,7 +30,7 @@ const WISHLIST_SORT_OPTIONS = [
   { id: 'recent', label: 'Ajouts récents', icon: 'clock-outline' },
   { id: 'title', label: 'Nom (A-Z)', icon: 'sort-alphabetical-variant' },
   { id: 'release', label: 'Date de sortie', icon: 'calendar-clock' },
-  { id: 'priority', label: 'Priorité d\'achat', icon: 'priority-high' },
+  { id: 'priority', label: 'Niveau d\'envie', icon: 'fire' },
 ];
 
 const PRIORITIES = ['Basse', 'Moyenne', 'Haute', 'Immédiate'];
@@ -121,6 +121,24 @@ export default function WishlistScreen() {
         return currentTheme.textMuted;
     }
   };
+
+  const DesireIndicator = ({ priority, color }: { priority: string; color: string }) => {
+  const levels: Record<string, number> = { 'Basse': 1, 'Moyenne': 2, 'Haute': 3, 'Immédiate': 4 };
+  const currentLevel = levels[priority] || 2;
+  
+  return (
+    <View style={[wishlistStyles.desireBadge, { borderColor: `${color}40`, backgroundColor: `${color}15` }]}>
+      {[1, 2, 3, 4].map((level) => (
+        <MaterialCommunityIcons 
+          key={level}
+          name="fire" // Vous pouvez aussi tester "cards-heart" ou "star"
+          size={12}
+          color={level <= currentLevel ? color : `${color}30`}
+        />
+      ))}
+    </View>
+  );
+};
 
   useEffect(() => {
     fetchGames();
@@ -315,6 +333,7 @@ export default function WishlistScreen() {
       <StatusBar style={currentTheme.bg === '#ffffff' ? "dark" : "light"} />
       <FlatList
         data={processedGames}
+        extraData={selectedIds}
         key={viewMode}
         numColumns={viewMode === 'grid' ? 2 : 1}
         keyExtractor={(item) => item.id}
@@ -450,9 +469,8 @@ export default function WishlistScreen() {
                   <Text style={defaultStyles.listTitle} numberOfLines={1}>{item.title}</Text>
                   <View style={defaultStyles.listBadgesRow}>
                     <PlatformBadge platform={item.platform} />
-                    <View style={[wishlistStyles.priorityMiniBadge, { borderColor: pColor }]}>
-                      <View style={[wishlistStyles.priorityDot, { backgroundColor: pColor }]} />
-                      <Text style={[wishlistStyles.priorityMiniText, { color: pColor }]}>{item.priority}</Text>
+                    <View style={defaultStyles.cardBadgesRow}>
+                      <DesireIndicator priority={item.priority} color={pColor} />
                     </View>
                   </View>
                   {countdown && (
@@ -488,9 +506,8 @@ export default function WishlistScreen() {
                 <Text style={defaultStyles.cardTitle} numberOfLines={1}>{item.title}</Text>
                 <View style={defaultStyles.cardBadgesRow}>
                   <PlatformBadge platform={item.platform} />
-                  <View style={[wishlistStyles.priorityMiniBadge, { borderColor: pColor }]}>
-                      <View style={[wishlistStyles.priorityDot, { backgroundColor: pColor }]} />
-                      <Text style={[wishlistStyles.priorityMiniText, { color: pColor }]}>{item.priority}</Text>
+                  <View style={defaultStyles.cardBadgesRow}>
+                    <DesireIndicator priority={item.priority} color={pColor} />
                   </View>
                 </View>
               </View>
@@ -577,28 +594,6 @@ export default function WishlistScreen() {
                         ))}
                       </View>
 
-                      <Text style={defaultStyles.sectionTitle}>Priorité d'achat</Text>
-                      <View style={defaultStyles.statusGrid}>
-                        {PRIORITIES.map((p) => {
-                          const pColor = getPriorityColor(p);
-                          const isActive = selectedGame.priority === p;
-                          return (
-                            <TouchableOpacity
-                              key={p}
-                              style={[
-                                defaultStyles.statusOption,
-                                { borderColor: isActive ? pColor : currentTheme.border },
-                                isActive && { backgroundColor: `${pColor}18` }
-                              ]}
-                              onPress={() => updateGameField('priority', p)}
-                            >
-                              <MaterialCommunityIcons name={isActive ? "star" : "star-outline"} size={14} color={isActive ? pColor : currentTheme.textSecondary} />
-                              <Text style={[defaultStyles.statusOptionText, isActive && { color: pColor }]}>{p}</Text>
-                            </TouchableOpacity>
-                          );
-                        })}
-                      </View>
-
                       <Text style={defaultStyles.sectionTitle}>Plateforme</Text>
                       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={defaultStyles.pillScroll}>
                         {[...(selectedGame.platforms_list || [])]
@@ -615,6 +610,43 @@ export default function WishlistScreen() {
                             </TouchableOpacity>
                           ))}
                       </ScrollView>
+
+                      <Text style={defaultStyles.sectionTitle}>Niveau d'envie</Text>
+                      <View style={defaultStyles.statusGrid}>
+                        {PRIORITIES.map((p) => {
+                          const pColor = getPriorityColor(p);
+                          const isActive = selectedGame.priority === p;
+                          const levelMap: Record<string, number> = { 'Basse': 1, 'Moyenne': 2, 'Haute': 3, 'Immédiate': 4 };
+                          const currentLvl = levelMap[p];
+                          
+                          return (
+                            <TouchableOpacity
+                              key={p}
+                              style={[
+                                defaultStyles.statusOption,
+                                { borderColor: isActive ? pColor : currentTheme.border },
+                                isActive && { backgroundColor: `${pColor}18` }
+                              ]}
+                              onPress={() => updateGameField('priority', p)}
+                            >
+                              <View style={{ flexDirection: 'row', marginBottom: 4 }}>
+                                {[1, 2, 3, 4].map(l => (
+                                  <MaterialCommunityIcons 
+                                    key={l}
+                                    name="fire" 
+                                    size={14} 
+                                    color={l <= currentLvl 
+                                      ? (isActive ? pColor : currentTheme.textSecondary) 
+                                      : (isActive ? `${pColor}40` : `${currentTheme.textSecondary}30`)
+                                    } 
+                                  />
+                                ))}
+                              </View>
+                              <Text style={[defaultStyles.statusOptionText, isActive && { color: pColor }]}>{p}</Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
 
                       <TouchableOpacity style={wishlistStyles.transferBtn} onPress={moveToCollection}>
                         <MaterialCommunityIcons name="playlist-plus" size={18} color={currentTheme.bg} />

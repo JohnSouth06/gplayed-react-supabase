@@ -1,8 +1,6 @@
 // app/(tabs)/index.tsx
-import { supabase } from '@/lib/supabase';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Shadow } from 'react-native-shadow-2';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
@@ -11,6 +9,7 @@ import {
   Text, TextInput, TouchableOpacity,
   View
 } from 'react-native';
+import { Shadow } from 'react-native-shadow-2';
 import { useCustomTheme } from '../../context/ThemeContext';
 
 import {
@@ -287,6 +286,7 @@ const getStatusColor = (displayStatus: string) => {
       <StatusBar style={currentTheme.bg === '#ffffff' ? "dark" : "light"} />
       <FlatList
         data={processedGames}
+        extraData={selectedIds}
         key={viewMode}
         numColumns={viewMode === 'grid' ? 2 : 1}
         keyExtractor={(item) => item.id}

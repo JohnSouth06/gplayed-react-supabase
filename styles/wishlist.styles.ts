@@ -25,24 +25,15 @@ export const getWishlistStyles = (theme: any, accentColor: string) => StyleSheet
     fontWeight: '600',
     marginTop: 2,
   },
-  priorityMiniBadge: {
+  // Nouveaux styles pour la jauge d'envie
+  desireBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 5,
-    paddingVertical: 2,
+    gap: 2,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
     borderRadius: 6,
     borderWidth: 1,
-  },
-  priorityDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  priorityMiniText: {
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 0.2,
   },
   transferBtn: {
     flexDirection: 'row',
@@ -52,7 +43,7 @@ export const getWishlistStyles = (theme: any, accentColor: string) => StyleSheet
     padding: 15,
     borderRadius: 14,
     backgroundColor: accentColor,
-    marginBottom: 14, // Espace entre ce bouton et le bouton supprimer
+    marginBottom: 14, 
   },
   transferBtnText: {
     color: theme.bg,
