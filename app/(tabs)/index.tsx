@@ -317,7 +317,7 @@ const getStatusColor = (displayStatus: string) => {
                 return (
                   <TouchableOpacity
                     key={format}
-                    style={{ flex: 1 }} // Important pour que l'ombre occupe tout l'espace
+                    style={styles.tabWrapper} // Remplacé ici
                     onPress={() => { setActiveFormat(format); setCollectionSearchQuery(''); }}
                     activeOpacity={0.7}
                   >
@@ -326,8 +326,8 @@ const getStatusColor = (displayStatus: string) => {
                       <Shadow
                         distance={8}
                         startColor={`${accentColor}35`} // Lueur de la couleur accentuée
-                        containerStyle={{ flex: 1 }}
-                        style={{ width: '100%', borderRadius: 11 }}
+                        containerStyle={styles.activeTabShadowContainer} // Remplacé ici
+                        style={styles.activeTabShadowStyle} // Remplacé ici
                       >
                         <View style={[styles.tab, styles.activeTab]}>
                           <MaterialCommunityIcons
@@ -755,11 +755,11 @@ const getStatusColor = (displayStatus: string) => {
             <MaterialCommunityIcons name="close" size={18} color={currentTheme.textSecondary} />
           </TouchableOpacity>
           <Text style={styles.selectionBarText}>
-            <Text style={{ color: accentColor, fontWeight: '700' }}>{selectedIds.size}</Text>
+            <Text style={styles.selectionCountText}>{selectedIds.size}</Text>
             {' '}sélectionné{selectedIds.size > 1 ? 's' : ''}
           </Text>
           <TouchableOpacity
-            style={[styles.selectionDeleteBtn, selectedIds.size === 0 && { opacity: 0.4 }]}
+            style={[styles.selectionDeleteBtn, selectedIds.size === 0 && styles.disabledDeleteBtn]}
             onPress={deleteSelectedGames}
             disabled={selectedIds.size === 0}
           >

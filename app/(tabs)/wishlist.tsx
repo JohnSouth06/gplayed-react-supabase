@@ -235,10 +235,23 @@ export default function WishlistScreen() {
 
   const moveToCollection = async () => {
     try {
+      // 1. Mise à jour en base de données
       await updateCollectionEntry(selectedGame.id, { status: 'todo' });
-      setDetailModalVisible(false);
-      Alert.alert("Succès", "Jeu ajouté à votre collection !");
+      
+      // 2. Mettre à jour la liste des jeux en arrière-plan
       fetchGames();
+      
+      // 3. Afficher l'alerte en premier, et lier la fermeture de la modale au bouton OK
+      Alert.alert(
+        "Succès", 
+        "Jeu ajouté à votre collection !",
+        [
+          { 
+            text: "OK", 
+            onPress: () => setDetailModalVisible(false) 
+          }
+        ]
+      );
     } catch (e: any) {
       Alert.alert("Erreur", "Impossible de déplacer le jeu.");
     }
@@ -368,29 +381,11 @@ export default function WishlistScreen() {
             </View>
 
             {suggestions.length > 0 && (
-              <View style={{
-                marginHorizontal: 15,
-                marginBottom: 20,
-                paddingVertical: 12,
-                borderRadius: 16,
-                backgroundColor: currentTheme.surface, // Utilise la couleur de surface pour se détacher du fond
-                borderWidth: 1,
-                borderColor: currentTheme.border || `${currentTheme.textSecondary}15`,
-              }}>
-                <View style={{ 
-                  flexDirection: 'row', 
-                  alignItems: 'center', 
-                  justifyContent: 'space-between',
-                  paddingHorizontal: 12, 
-                  marginBottom: 10 
-                }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <View style={wishlistStyles.suggestionContainer}>
+                <View style={wishlistStyles.suggestionHeader}>
+                  <View style={wishlistStyles.suggestionHeaderLeft}>
                     <MaterialCommunityIcons name="star-four-points-outline" size={14} color={accentColor} />
-                    <Text style={{ 
-                      fontSize: 13, 
-                      fontWeight: '600', 
-                      color: currentTheme.textSecondary, // Moins prédominant (textSecondary au lieu de textPrimary)
-                    }}>
+                    <Text style={wishlistStyles.suggestionTitle}>
                       Suggestion personnalisée
                     </Text>
                   </View>
@@ -401,33 +396,38 @@ export default function WishlistScreen() {
                   showsHorizontalScrollIndicator={false}
                   data={suggestions}
                   keyExtractor={(item) => item.id.toString()}
-                  contentContainerStyle={{ paddingHorizontal: 12, gap: 12 }}
+                  contentContainerStyle={wishlistStyles.suggestionListContent}
                   renderItem={({ item }) => (
                     <TouchableOpacity
-                      style={{ width: 85 }} // Largeur réduite
+                      style={wishlistStyles.suggestionItem}
                       activeOpacity={0.7}
                       onPress={async () => {
                         try {
-                          // 1. Déclencher l'état de chargement de la modal
-                          setLoading(true);
-                          
-                          // 2. Ouvrir la modal et pré-remplir le champ textuel de recherche
+                          setSearching(true);
                           setSearchQuery(item.name);
                           setModalVisible(true);
 
-                          // 3. Lancer la recherche IGDB en arrière-plan
-                          const details = await searchGames(item.name);
+                          const data = await searchGames(item.name);
                           
-                          if (details && details.length > 0) {
-                            // 4. Injecter les résultats dans le tableau de la modal
-                            setResults(details);
-                            
-                            // 5. Sélectionner automatiquement le jeu correspondant
-                            const exactGame = details.find((g: any) => g.id === item.id) || details[0];
-                            setSelectedGame(exactGame);
-                            
-                            // 6. Configurer le format (Physique / Numérique) selon l'onglet actif ('Physique' ou 'Numérique')
-                            setFormat(activeTab); 
+                          if (Array.isArray(data) && data.length > 0) {
+                            const sorted = data.sort((a, b) => {
+                              if (a.version_parent === null && b.version_parent !== null) return -1;
+                              if (a.version_parent !== null && b.version_parent === null) return 1;
+                              return 0;
+                            });
+
+                            const flattened: any[] = [];
+                            sorted.forEach(game => {
+                              if (game.platforms && game.platforms.length > 0) {
+                                game.platforms.forEach((p: any) => { 
+                                  flattened.push({ ...game, selectedPlatform: p.name, uniqueSearchId: `${game.id}-${p.id}` }); 
+                                });
+                              } else { 
+                                flattened.push({ ...game, selectedPlatform: 'PC', uniqueSearchId: game.id.toString() }); 
+                              }
+                            });
+
+                            setResults(flattened);
                           } else {
                             setResults([]);
                           }
@@ -435,27 +435,16 @@ export default function WishlistScreen() {
                           console.error("Erreur lors du chargement direct de la suggestion :", err);
                           Alert.alert("Erreur", "Impossible de récupérer les résultats de recherche.");
                         } finally {
-                          // 7. Arrêter l'indicateur de chargement
-                          setLoading(false);
+                          setSearching(false);
                         }
                       }}
                     >
                       <Image 
                         source={{ uri: item.cover_url || 'https://via.placeholder.com/85x120' }} 
-                        style={{ 
-                          width: 85, 
-                          height: 120, // Hauteur réduite
-                          borderRadius: 8, 
-                          backgroundColor: currentTheme.bg 
-                        }} 
+                        style={wishlistStyles.suggestionCover} 
                       />
                       <Text 
-                        style={{ 
-                          color: currentTheme.textPrimary, 
-                          marginTop: 5, 
-                          fontSize: 11, 
-                          fontWeight: '500' 
-                        }} 
+                        style={wishlistStyles.suggestionGameTitle} 
                         numberOfLines={1}
                       >
                         {item.name}
@@ -473,17 +462,16 @@ export default function WishlistScreen() {
                 return (
                   <TouchableOpacity
                     key={format}
-                    style={{ flex: 1 }}
+                    style={wishlistStyles.tabWrapper}
                     onPress={() => { setActiveFormat(format); setCollectionSearchQuery(''); }}
                     activeOpacity={0.7}
                   >
                     {isActive ? (
-                      /* Onglet Actif avec Lueur */
                       <Shadow
                         distance={8}
                         startColor={`${accentColor}35`}
-                        containerStyle={{ flex: 1 }}
-                        style={{ width: '100%', borderRadius: 11 }}
+                        containerStyle={wishlistStyles.activeTabShadowContainer}
+                        style={wishlistStyles.activeTabShadowStyle}
                       >
                         <View style={[defaultStyles.tab, defaultStyles.activeTab]}>
                           <MaterialCommunityIcons
@@ -497,7 +485,6 @@ export default function WishlistScreen() {
                         </View>
                       </Shadow>
                     ) : (
-                      /* Onglet Inactif */
                       <View style={defaultStyles.tab}>
                         <MaterialCommunityIcons
                           name={format === 'Physique' ? 'disc' : 'cloud-download-outline'}
