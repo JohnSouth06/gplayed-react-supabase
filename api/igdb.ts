@@ -4,6 +4,37 @@ const CLIENT_SECRET = process.env.EXPO_PUBLIC_IGDB_CLIENT_SECRET;
 let accessToken = '';
 
 /**
+ * Exécute une requête Apicalypse brute sur l'API IGDB (utilisé pour les suggestions)
+ */
+export const fetchFromIGDB = async (bodyQuery: string) => {
+  try {
+    const token = await getAccessToken();
+
+    const response = await fetch('https://api.igdb.com/v4/games', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Client-ID': CLIENT_ID!,
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'text/plain',
+      },
+      body: bodyQuery,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Erreur réponse générique IGDB :", errorData);
+      return [];
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Erreur réseau générique IGDB :", error);
+    return [];
+  }
+};
+
+/**
  * Récupère le jeton d'accès OAuth de Twitch requis pour IGDB
  */
 async function getAccessToken() {

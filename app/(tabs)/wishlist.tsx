@@ -17,6 +17,7 @@ import {
   getCurrentUser,
   getUserCollection,
   getUserProfile,
+  getWishlistSuggestions,
   MAP_FORMAT_TO_SQL, MAP_SQL_TO_FORMAT,
   removeGameFromCollection, updateCollectionEntry
 } from '@/api/collection';
@@ -30,10 +31,10 @@ const WISHLIST_SORT_OPTIONS = [
   { id: 'recent', label: 'Ajouts récents', icon: 'clock-outline' },
   { id: 'title', label: 'Nom (A-Z)', icon: 'sort-alphabetical-variant' },
   { id: 'release', label: 'Date de sortie', icon: 'calendar-clock' },
-  { id: 'priority', label: 'Niveau d\'envie', icon: 'fire' },
+  { id: 'priority', label: 'Hype', icon: 'fire' },
 ];
 
-const PRIORITIES = ['Basse', 'Moyenne', 'Haute', 'Immédiate'];
+const PRIORITIES = ['Basse', 'Moyenne', 'Haute', 'Intense'];
 
 const getCountdown = (dateString: string) => {
   if (!dateString) return null;
@@ -90,6 +91,10 @@ export default function WishlistScreen() {
 
   const [myWishlist, setMyWishlist] = useState<any[]>([]); 
   const [fullCollection, setFullCollection] = useState<any[]>([]); 
+
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [selectedSuggestedGame, setSelectedSuggestedGame] = useState<any>(null);
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -174,6 +179,11 @@ export default function WishlistScreen() {
 
       const profileData = await getUserProfile(user.id);
       if (profileData) setUsername(profileData.username);
+
+      setLoadingSuggestions(true);
+      const suggs = await getWishlistSuggestions(user.id);
+      setSuggestions(suggs);
+      setLoadingSuggestions(false);
 
     } catch (e: any) {
       console.error("Erreur récupération wishlist:", e.message);
@@ -356,6 +366,105 @@ export default function WishlistScreen() {
                 </Text>
               </View>
             </View>
+
+            {suggestions.length > 0 && (
+              <View style={{
+                marginHorizontal: 15,
+                marginBottom: 20,
+                paddingVertical: 12,
+                borderRadius: 16,
+                backgroundColor: currentTheme.surface, // Utilise la couleur de surface pour se détacher du fond
+                borderWidth: 1,
+                borderColor: currentTheme.border || `${currentTheme.textSecondary}15`,
+              }}>
+                <View style={{ 
+                  flexDirection: 'row', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between',
+                  paddingHorizontal: 12, 
+                  marginBottom: 10 
+                }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <MaterialCommunityIcons name="star-four-points-outline" size={14} color={accentColor} />
+                    <Text style={{ 
+                      fontSize: 13, 
+                      fontWeight: '600', 
+                      color: currentTheme.textSecondary, // Moins prédominant (textSecondary au lieu de textPrimary)
+                    }}>
+                      Suggestion personnalisée
+                    </Text>
+                  </View>
+                </View>
+
+                <FlatList
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  data={suggestions}
+                  keyExtractor={(item) => item.id.toString()}
+                  contentContainerStyle={{ paddingHorizontal: 12, gap: 12 }}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={{ width: 85 }} // Largeur réduite
+                      activeOpacity={0.7}
+                      onPress={async () => {
+                        try {
+                          // 1. Déclencher l'état de chargement de la modal
+                          setLoading(true);
+                          
+                          // 2. Ouvrir la modal et pré-remplir le champ textuel de recherche
+                          setSearchQuery(item.name);
+                          setModalVisible(true);
+
+                          // 3. Lancer la recherche IGDB en arrière-plan
+                          const details = await searchGames(item.name);
+                          
+                          if (details && details.length > 0) {
+                            // 4. Injecter les résultats dans le tableau de la modal
+                            setResults(details);
+                            
+                            // 5. Sélectionner automatiquement le jeu correspondant
+                            const exactGame = details.find((g: any) => g.id === item.id) || details[0];
+                            setSelectedGame(exactGame);
+                            
+                            // 6. Configurer le format (Physique / Numérique) selon l'onglet actif ('Physique' ou 'Numérique')
+                            setFormat(activeTab); 
+                          } else {
+                            setResults([]);
+                          }
+                        } catch (err) {
+                          console.error("Erreur lors du chargement direct de la suggestion :", err);
+                          Alert.alert("Erreur", "Impossible de récupérer les résultats de recherche.");
+                        } finally {
+                          // 7. Arrêter l'indicateur de chargement
+                          setLoading(false);
+                        }
+                      }}
+                    >
+                      <Image 
+                        source={{ uri: item.cover_url || 'https://via.placeholder.com/85x120' }} 
+                        style={{ 
+                          width: 85, 
+                          height: 120, // Hauteur réduite
+                          borderRadius: 8, 
+                          backgroundColor: currentTheme.bg 
+                        }} 
+                      />
+                      <Text 
+                        style={{ 
+                          color: currentTheme.textPrimary, 
+                          marginTop: 5, 
+                          fontSize: 11, 
+                          fontWeight: '500' 
+                        }} 
+                        numberOfLines={1}
+                      >
+                        {item.name}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                />
+              </View>
+            )}
 
             <View style={defaultStyles.tabsContainer}>
               {(['Physique', 'Numérique'] as const).map((format) => {
@@ -611,12 +720,12 @@ export default function WishlistScreen() {
                           ))}
                       </ScrollView>
 
-                      <Text style={defaultStyles.sectionTitle}>Niveau d'envie</Text>
+                      <Text style={defaultStyles.sectionTitle}>Hype</Text>
                       <View style={defaultStyles.statusGrid}>
                         {PRIORITIES.map((p) => {
                           const pColor = getPriorityColor(p);
                           const isActive = selectedGame.priority === p;
-                          const levelMap: Record<string, number> = { 'Basse': 1, 'Moyenne': 2, 'Haute': 3, 'Immédiate': 4 };
+                          const levelMap: Record<string, number> = { 'Basse': 1, 'Moyenne': 2, 'Haute': 3, 'Intense': 4 };
                           const currentLvl = levelMap[p];
                           
                           return (

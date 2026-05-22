@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { fetchFromIGDB } from './igdb';
 
 // ─── CONSTANTES DE MAPPING (Base de données <-> UI) ─────────────
 export const MAP_FORMAT_TO_SQL = { 'Physique': 'physical', 'Numérique': 'digital' } as const;
@@ -174,6 +175,73 @@ export const removeGameFromCollection = async (collectionId: string) => {
     .eq('id', collectionId);
 
   if (error) throw error;
+};
+
+/**
+ * 5. Récupère des suggestions personnalisées pour la wishlist
+ */
+export const getWishlistSuggestions = async (userId: string) => {
+  try {
+    // 1. Récupérer les jeux terminés ou platinés depuis Supabase
+    const { data: refGames, error: refError } = await supabase
+      .from('user_collection')
+      .select('game_id')
+      .eq('user_id', userId)
+      .in('status', ['finished', 'platinum'])
+      .limit(5);
+
+    if (refError || !refGames || refGames.length === 0) return [];
+    const referenceIds = refGames.map(game => game.game_id);
+
+    // 2. Récupérer toute la collection pour exclure les jeux déjà possédés ou déjà en wishlist
+    const { data: allGames } = await supabase
+      .from('user_collection')
+      .select('game_id')
+      .eq('user_id', userId);
+    const ownedIds = allGames ? allGames.map(g => g.game_id) : [];
+
+    // 3. Demander à IGDB les jeux similaires aux jeux de référence
+    const similarQuery = `fields similar_games; where id = (${referenceIds.join(',')}); limit 5;`;
+    const igdbResponse = await fetchFromIGDB(similarQuery);
+    
+    if (!Array.isArray(igdbResponse)) return [];
+    
+    // Extraire et fusionner tous les IDs de jeux similaires
+    let suggestedIds: number[] = [];
+    igdbResponse.forEach((game: any) => {
+      if (game.similar_games) {
+        suggestedIds = [...suggestedIds, ...game.similar_games];
+      }
+    });
+
+    // Filtrer les doublons et retirer les jeux que l'utilisateur possède déjà
+    const uniqueSuggestedIds = [...new Set(suggestedIds)].filter(id => !ownedIds.includes(id));
+    if (uniqueSuggestedIds.length === 0) return [];
+
+    // 4. Récupérer les détails des jeux suggérés filtrés (Nom, Cover)
+    const finalQuery = `fields name, cover.url, total_rating; where id = (${uniqueSuggestedIds.slice(0, 10).join(',')}); sort total_rating desc;`;
+    const finalSuggestions = await fetchFromIGDB(finalQuery);
+    
+    if (!Array.isArray(finalSuggestions)) return [];
+
+    // 5. Formater les objets pour l'UI de l'application
+    return finalSuggestions.map((game: any) => {
+      // On transforme l'url miniature d'IGDB (t_thumb) en format jaquette (t_cover_big) si disponible
+      const coverUrl = game.cover?.url 
+        ? `https:${game.cover.url.replace('t_thumb', 't_cover_big')}` 
+        : null;
+
+      return {
+        id: game.id,
+        name: game.name,
+        cover_url: coverUrl
+      };
+    });
+
+  } catch (error) {
+    console.error("Erreur getWishlistSuggestions:", error);
+    return [];
+  }
 };
 
 // ─── FONCTIONS ADDITIONNELLES ─
