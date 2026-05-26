@@ -134,6 +134,12 @@ export default function ProfileScreen() {
 
 const ThemeToggle = () => {
   const options = [
+   { 
+      id: 'mint', 
+      label: 'Mint', 
+      icon: 'leaf', 
+      color: MintTheme.primary 
+    },
     { 
       id: 'light', 
       label: 'Clair', 
@@ -145,12 +151,6 @@ const ThemeToggle = () => {
       label: 'Sombre', 
       icon: 'moon-waning-crescent', 
       color: DarkTheme.primary
-    },
-    { 
-      id: 'mint', 
-      label: 'Mint', 
-      icon: 'leaf', 
-      color: MintTheme.primary 
     },
   ];
 

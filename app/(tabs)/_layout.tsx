@@ -62,15 +62,13 @@ type TabIconProps = {
 };
 
 function TabIcon({ name, color, focused }: TabIconProps) {
-  const { theme: currentTheme } = useCustomTheme();
-
   return (
     <View style={[
       tabIconStyles.wrapper, 
-      focused && { backgroundColor: `${currentTheme.primary}14` } // Fond dynamique
+      focused && { backgroundColor: `${color}14` }
     ]}>
       <MaterialCommunityIcons name={name as any} size={24} color={color} />
-      {focused && <View style={[tabIconStyles.dot, { backgroundColor: currentTheme.primary }]} />}
+      {focused && <View style={[tabIconStyles.dot, { backgroundColor: color }]} />}
     </View>
   );
 }
@@ -125,6 +123,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Collection',
+          tabBarActiveTintColor: currentTheme.primary, // Conserve le vert (primary)
           tabBarIcon: ({ color, focused }) => (
             <TabIcon name="gamepad-variant-outline" color={color} focused={focused} />
           ),
@@ -134,6 +133,7 @@ export default function TabLayout() {
         name="wishlist"
         options={{
           title: 'Wishlist',
+          tabBarActiveTintColor: currentTheme.wishlist, // Utilise le rouge saumon de Theme.ts
           tabBarIcon: ({ color, focused }) => (
             <TabIcon name="heart-outline" color={color} focused={focused} />
           ),
@@ -143,6 +143,7 @@ export default function TabLayout() {
         name="psntrophies"
         options={{
           title: 'Trophées',
+          tabBarActiveTintColor: currentTheme.blue, // Utilise le bleu pour contraster
           tabBarIcon: ({ color, focused }) => (
             <TabIcon name="trophy-outline" color={color} focused={focused} />
           ),
@@ -152,6 +153,7 @@ export default function TabLayout() {
         name="stats"
         options={{
           title: 'Stats',
+          tabBarActiveTintColor: currentTheme.yellow, // Utilise le jaune
           tabBarIcon: ({ color, focused }) => (
             <TabIcon name="chart-areaspline-variant" color={color} focused={focused} />
           ),
