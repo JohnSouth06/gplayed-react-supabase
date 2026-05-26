@@ -946,5 +946,22 @@ export const getBaseStyles = (theme: typeof C, accentColor: string, accentColorD
       alignItems: 'center',
       justifyContent: 'center',
     },
+    selectionCountText: {
+      color: accentColor, 
+      fontWeight: '700',
+    },
+    disabledDeleteBtn: {
+      opacity: 0.4,
+    },
+    tabWrapper: {
+      flex: 1,
+    },
+    activeTabShadowContainer: {
+      flex: 1,
+    },
+    activeTabShadowStyle: {
+      width: '100%', 
+      borderRadius: 11,
+    }
   })
 };

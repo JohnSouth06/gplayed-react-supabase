@@ -93,6 +93,7 @@ export default function WishlistScreen() {
   const [fullCollection, setFullCollection] = useState<any[]>([]); 
 
   const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [suggestionsCollapsed, setSuggestionsCollapsed] = useState(false);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [selectedSuggestedGame, setSelectedSuggestedGame] = useState<any>(null);
 
@@ -235,24 +236,30 @@ export default function WishlistScreen() {
 
   const moveToCollection = async () => {
     try {
-      // 1. Mise à jour en base de données
+      // 1. MISE À JOUR OPTIMISTE DE L'INTERFACE (Instantané)
+      // On retire immédiatement le jeu de l'affichage de la wishlist
+      setMyWishlist(prevWishlist => prevWishlist.filter(game => game.id !== selectedGame.id));
+      
+      // On met à jour le statut dans la collection globale locale
+      setFullCollection(prevCollection => prevCollection.map(game => 
+        game.id === selectedGame.id ? { ...game, status: 'todo' } : game
+      ));
+
+      // On ferme la modale tout de suite pour plus de fluidité
+      setDetailModalVisible(false);
+
+      // 2. REQUÊTE RÉSEAU (En arrière-plan)
       await updateCollectionEntry(selectedGame.id, { status: 'todo' });
       
-      // 2. Mettre à jour la liste des jeux en arrière-plan
+      // 3. SYNCHRONISATION (Optionnelle)
+      // Rafraîchissement silencieux pour s'assurer que tout est parfait avec le serveur
       fetchGames();
-      
-      // 3. Afficher l'alerte en premier, et lier la fermeture de la modale au bouton OK
-      Alert.alert(
-        "Succès", 
-        "Jeu ajouté à votre collection !",
-        [
-          { 
-            text: "OK", 
-            onPress: () => setDetailModalVisible(false) 
-          }
-        ]
-      );
+
+      Alert.alert("Succès", "Jeu ajouté à votre collection !");
     } catch (e: any) {
+      // 4. GESTION D'ERREUR (Rollback)
+      // Si la requête échoue, on rafraîchit pour remettre le jeu qui avait disparu
+      fetchGames();
       Alert.alert("Erreur", "Impossible de déplacer le jeu.");
     }
   };
@@ -382,76 +389,71 @@ export default function WishlistScreen() {
 
             {suggestions.length > 0 && (
               <View style={wishlistStyles.suggestionContainer}>
-                <View style={wishlistStyles.suggestionHeader}>
+                <TouchableOpacity 
+                  activeOpacity={0.7}
+                  onPress={() => setSuggestionsCollapsed(!suggestionsCollapsed)}
+                  style={[
+                    wishlistStyles.suggestionHeader, 
+                    { marginBottom: suggestionsCollapsed ? 0 : 10 }
+                  ]}>
                   <View style={wishlistStyles.suggestionHeaderLeft}>
                     <MaterialCommunityIcons name="star-four-points-outline" size={14} color={accentColor} />
                     <Text style={wishlistStyles.suggestionTitle}>
                       Suggestion personnalisée
                     </Text>
                   </View>
-                </View>
+                  <MaterialCommunityIcons 
+                    name={suggestionsCollapsed ? "chevron-down" : "chevron-up"} 
+                    size={18} 
+                    color={currentTheme.textSecondary} 
+                  />
+                </TouchableOpacity>
 
-                <FlatList
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  data={suggestions}
-                  keyExtractor={(item) => item.id.toString()}
-                  contentContainerStyle={wishlistStyles.suggestionListContent}
-                  renderItem={({ item }) => (
-                    <TouchableOpacity
-                      style={wishlistStyles.suggestionItem}
-                      activeOpacity={0.7}
-                      onPress={async () => {
-                        try {
-                          setSearching(true);
-                          setSearchQuery(item.name);
-                          setModalVisible(true);
-
-                          const data = await searchGames(item.name);
-                          
-                          if (Array.isArray(data) && data.length > 0) {
-                            const sorted = data.sort((a, b) => {
-                              if (a.version_parent === null && b.version_parent !== null) return -1;
-                              if (a.version_parent !== null && b.version_parent === null) return 1;
-                              return 0;
-                            });
-
-                            const flattened: any[] = [];
-                            sorted.forEach(game => {
-                              if (game.platforms && game.platforms.length > 0) {
-                                game.platforms.forEach((p: any) => { 
-                                  flattened.push({ ...game, selectedPlatform: p.name, uniqueSearchId: `${game.id}-${p.id}` }); 
-                                });
-                              } else { 
-                                flattened.push({ ...game, selectedPlatform: 'PC', uniqueSearchId: game.id.toString() }); 
-                              }
-                            });
-
-                            setResults(flattened);
-                          } else {
-                            setResults([]);
+                {!suggestionsCollapsed && (
+                  <FlatList
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    data={suggestions}
+                    keyExtractor={(item) => item.id.toString()}
+                    contentContainerStyle={wishlistStyles.suggestionListContent}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        style={wishlistStyles.suggestionItem}
+                        activeOpacity={0.7}
+                        onPress={async () => {
+                          try {
+                            setLoading(true);
+                            setSearchQuery(item.name);
+                            setModalVisible(true);
+                            const details = await searchGames(item.name);
+                            
+                            if (details && details.length > 0) {
+                              setResults(details);
+                              const exactGame = details.find((g: any) => g.id === item.id) || details[0];
+                              setSelectedGame(exactGame);
+                              setActiveFormat(activeFormat); 
+                            } else {
+                              setResults([]);
+                            }
+                          } catch (err) {
+                            console.error("Erreur lors du chargement direct de la suggestion :", err);
+                            Alert.alert("Erreur", "Impossible de récupérer les résultats de recherche.");
+                          } finally {
+                            setLoading(false);
                           }
-                        } catch (err) {
-                          console.error("Erreur lors du chargement direct de la suggestion :", err);
-                          Alert.alert("Erreur", "Impossible de récupérer les résultats de recherche.");
-                        } finally {
-                          setSearching(false);
-                        }
-                      }}
-                    >
-                      <Image 
-                        source={{ uri: item.cover_url || 'https://via.placeholder.com/85x120' }} 
-                        style={wishlistStyles.suggestionCover} 
-                      />
-                      <Text 
-                        style={wishlistStyles.suggestionGameTitle} 
-                        numberOfLines={1}
+                        }}
                       >
-                        {item.name}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                />
+                        <Image 
+                          source={{ uri: item.cover_url || 'https://via.placeholder.com/85x120' }} 
+                          style={wishlistStyles.suggestionCover} 
+                        />
+                        <Text style={wishlistStyles.suggestionText} numberOfLines={1}>
+                          {item.name}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  />
+                )}
               </View>
             )}
 

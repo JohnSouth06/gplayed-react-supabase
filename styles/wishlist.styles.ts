@@ -1,4 +1,4 @@
-// app/(tabs)/wishlist.styles.ts
+// styles/wishlist.styles.ts
 import { StyleSheet } from 'react-native';
 
 export const getWishlistStyles = (theme: any, accentColor: string) => StyleSheet.create({
@@ -25,7 +25,6 @@ export const getWishlistStyles = (theme: any, accentColor: string) => StyleSheet
     fontWeight: '600',
     marginTop: 2,
   },
-  // Nouveaux styles pour la jauge d'envie
   desireBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -49,5 +48,75 @@ export const getWishlistStyles = (theme: any, accentColor: string) => StyleSheet
     color: theme.bg,
     fontWeight: '700',
     fontSize: 14,
+  },
+  
+  /* --- STYLES DES SUGGESTIONS --- */
+  suggestionContainer: {
+    marginHorizontal: 0,
+    marginBottom: 20,
+    paddingVertical: 12,
+    borderRadius: 16,
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.border || `${theme.textSecondary}15`,
+  },
+  suggestionHeader: {
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between',
+    paddingHorizontal: 12, 
+  },
+  suggestionHeaderLeft: {
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 6
+  },
+  suggestionTitle: {
+    fontSize: 13, 
+    fontWeight: '600', 
+    color: theme.textSecondary,
+  },
+  suggestionListContent: {
+    paddingHorizontal: 12, 
+    gap: 12
+  },
+  suggestionItem: {
+    width: 85
+  },
+  suggestionCover: {
+    width: 85, 
+    height: 120,
+    borderRadius: 8, 
+    backgroundColor: theme.bg 
+  },
+  suggestionText: {
+    color: theme.textPrimary, 
+    marginTop: 5, 
+    fontSize: 11, 
+    fontWeight: '500' 
+  },
+  suggestionCover: {
+    width: 85, 
+    height: 120,
+    borderRadius: 8, 
+    backgroundColor: theme.bg 
+  },
+  suggestionText: {
+    color: theme.textPrimary, 
+    marginTop: 5, 
+    fontSize: 11, 
+    fontWeight: '500' 
+  },
+  
+  /* --- STYLES DES ONGLETS (TABS) --- */
+  tabWrapper: {
+    flex: 1,
+  },
+  activeTabShadowContainer: {
+    flex: 1,
+  },
+  activeTabShadowStyle: {
+    width: '100%',
+    borderRadius: 11,
   }
 });
