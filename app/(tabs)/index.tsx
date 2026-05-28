@@ -23,7 +23,7 @@ import {
   removeGameFromCollection, updateCollectionEntry
 } from '@/api/collection';
 import { searchGames } from '@/api/igdb';
-
+import VoiceSearchInput from '../../components/VoiceSearchInput';
 import { badgeStyles, getBaseStyles, getPlatformInfo, getRatingColor, SORT_OPTIONS } from '../../styles/index.styles';
 
 const PlatformBadge = ({ platform }: { platform: string }) => {
@@ -208,11 +208,14 @@ export default function DashboardScreen() {
     ]);
   };
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
+  const handleSearch = async (overrideQuery?: string | any) => {
+    // Si on passe un texte explicite (ex: via la voix), on l'utilise. Sinon, on prend le texte de l'input.
+    const queryToUse = typeof overrideQuery === 'string' ? overrideQuery : searchQuery;
+    
+    if (!queryToUse.trim()) return;
     setSearching(true);
     try {
-      const data = await searchGames(searchQuery);
+      const data = await searchGames(queryToUse);
       if (Array.isArray(data)) {
         const sorted = data.sort((a, b) => {
           if (a.version_parent === null && b.version_parent !== null) return -1;
@@ -228,6 +231,11 @@ export default function DashboardScreen() {
         setResults(flattened);
       } else { setResults([]); }
     } catch (e) { setResults([]); } finally { setSearching(false); }
+  };
+
+  const handleVoiceSearch = (spokenText: string) => {
+    setSearchQuery(spokenText);
+    handleSearch(spokenText);
   };
 
   const handleAddGame = async (gameData: any) => {
@@ -683,6 +691,12 @@ const getStatusColor = (displayStatus: string) => {
                 <Text style={styles.closeText}>Fermer</Text>
               </TouchableOpacity>
             </View>
+
+            <VoiceSearchInput 
+              onSearch={handleVoiceSearch} 
+              placeholder="...ou appuyez pour dicter" 
+            />
+            
             {searching ? (
               <ActivityIndicator color={accentColor} style={{ marginTop: 30 }} />
             ) : (
