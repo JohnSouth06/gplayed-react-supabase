@@ -37,10 +37,9 @@
     "plugins": [
       "expo-router",
       [
-        "@react-native-voice/voice",
+        "expo-speech-recognition",
         {
-          "microphonePermission": "Autoriser l'application à utiliser le microphone pour la recherche vocale de jeux.",
-          "speechRecognitionPermission": "Autoriser l'application à utiliser la reconnaissance vocale pour trouver des jeux vidéo."
+          "microphonePermission": "Autoriser l'application à utiliser le microphone pour la recherche vocale de jeux."
         }
       ],
       [

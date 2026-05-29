@@ -1,141 +1,248 @@
-import Voice, { SpeechErrorEvent, SpeechResultsEvent } from '@react-native-voice/voice';
-import React, { useEffect, useState } from 'react';
-import { Alert, PermissionsAndroid, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import {
+  ExpoSpeechRecognitionModule,
+  useSpeechRecognitionEvent,
+} from 'expo-speech-recognition';
+import React, { useEffect, useRef, useState } from 'react';
+import { Alert, Animated, Easing, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-// On définit les props attendues : une fonction qui renvoie le texte détecté
-interface VoiceSearchInputProps {
-  onSearch: (query: string) => void;
-  placeholder?: string; // Optionnel : pour personnaliser le texte selon la page
+// ---------------------------------------------------------------------------
+// Dictionnaire de corrections phonétiques
+// Ajouter ici toute paire (mauvaise transcription → valeur correcte).
+// Les clés sont en minuscules ; la comparaison est insensible à la casse.
+// ---------------------------------------------------------------------------
+const PHONETIC_CORRECTIONS: Record<string, string> = {
+  // Ghost of Yotei
+  'you take':   'Yotei',
+  'you tail':   'Yotei',
+  'you tay':    'Yotei',
+  'yotay':      'Yotei',
+  'yotta':      'Yotei',
+  // Elden Ring
+  'alden ring': 'Elden Ring',
+  'eldan ring': 'Elden Ring',
+  // Cyberpunk
+  'cyber punk': 'Cyberpunk',
+  // Final Fantasy
+  'final fantasy': 'Final Fantasy',
+  // Zelda
+  'the legend of zelda': 'The Legend of Zelda',
+};
+
+/**
+ * Applique les corrections phonétiques sur le texte brut du moteur vocal.
+ * Remplace toutes les occurrences connues (insensible à la casse).
+ */
+function applyPhoneticCorrections(text: string): string {
+  let corrected = text;
+  for (const [wrong, right] of Object.entries(PHONETIC_CORRECTIONS)) {
+    const regex = new RegExp(wrong, 'gi');
+    corrected = corrected.replace(regex, right);
+  }
+  return corrected;
 }
 
-export default function VoiceSearchInput({ onSearch, placeholder = "Appuyez pour parler" }: VoiceSearchInputProps) {
+// ---------------------------------------------------------------------------
+
+interface VoiceSearchInputProps {
+  onSearch: (query: string) => void;
+  onSubmit?: (finalQuery: string) => void;
+  placeholder?: string;
+}
+
+export default function VoiceSearchInput({
+  onSearch,
+  onSubmit,
+  placeholder = "Appuyez pour parler",
+}: VoiceSearchInputProps) {
   const [isListening, setIsListening] = useState(false);
   const [partialResult, setPartialResult] = useState('');
 
+  // Mémoire "hors du temps" pour éviter le bug de Stale Closure
+  const latestTextRef = useRef('');
+
+  // Animation d'onde pulsante pendant l'écoute
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+  const pulseLoop = useRef<Animated.CompositeAnimation | null>(null);
+
   useEffect(() => {
-    Voice.onSpeechStart = () => setIsListening(true);
-    Voice.onSpeechEnd = () => setIsListening(false);
-
-    Voice.onSpeechPartialResults = (e: SpeechResultsEvent) => {
-      if (e.value && e.value.length > 0) {
-        setPartialResult(e.value[0]);
-      }
-    };
-
-    Voice.onSpeechResults = (e: SpeechResultsEvent) => {
-      if (e.value && e.value.length > 0) {
-        const finalQuery = e.value[0];
-        setPartialResult(finalQuery);
-        onSearch(finalQuery); // Renvoie le texte à la page parente
-      }
-      setIsListening(false);
-    };
-
-    // Callback d'erreur indispensable pour diagnostiquer les blocages en mode Release (APK)
-    Voice.onSpeechError = (e: SpeechErrorEvent) => {
-      setIsListening(false);
-      Alert.alert(
-        "Erreur de reconnaissance vocale",
-        `Code : ${e.error?.code}\nMessage : ${e.error?.message || 'Interruption du service'}`
+    if (isListening) {
+      opacityAnim.setValue(0.6);
+      pulseAnim.setValue(1);
+      pulseLoop.current = Animated.loop(
+        Animated.parallel([
+          Animated.sequence([
+            Animated.timing(pulseAnim, { toValue: 1.65, duration: 900, easing: Easing.out(Easing.ease), useNativeDriver: true }),
+            Animated.timing(pulseAnim, { toValue: 1, duration: 700, easing: Easing.in(Easing.ease), useNativeDriver: true }),
+          ]),
+          Animated.sequence([
+            Animated.timing(opacityAnim, { toValue: 0, duration: 900, useNativeDriver: true }),
+            Animated.timing(opacityAnim, { toValue: 0.6, duration: 700, useNativeDriver: true }),
+          ]),
+        ])
       );
-    };
+      pulseLoop.current.start();
+    } else {
+      pulseLoop.current?.stop();
+      pulseAnim.setValue(1);
+      opacityAnim.setValue(0);
+    }
+    return () => pulseLoop.current?.stop();
+  }, [isListening]);
 
-    return () => {
-      Voice.destroy().then(Voice.removeAllListeners);
-    };
-  }, [onSearch]);
+  useSpeechRecognitionEvent('start', () => setIsListening(true));
+
+  useSpeechRecognitionEvent('end', () => {
+    setIsListening(false);
+    if (onSubmit) {
+      onSubmit(latestTextRef.current);
+    }
+  });
+
+  useSpeechRecognitionEvent('result', (event) => {
+    const firstResult = event.results[0];
+    if (!firstResult) return;
+
+    const raw = firstResult.transcript || firstResult.alternatives?.[0]?.transcript || '';
+    if (!raw) return;
+
+    const text = applyPhoneticCorrections(raw);
+
+    setPartialResult(text);
+    latestTextRef.current = text;
+    onSearch(text);
+
+    if (firstResult.isFinal) {
+      ExpoSpeechRecognitionModule.stop();
+    }
+  });
+
+  useSpeechRecognitionEvent('error', (event) => {
+    setIsListening(false);
+    if (event.error !== 'no-speech') {
+      Alert.alert("Erreur vocale", event.message || "Interruption du moteur vocal");
+    }
+  });
 
   const startListening = async () => {
     try {
       setPartialResult('');
+      latestTextRef.current = '';
+      onSearch('');
 
-      // Demande de permission dynamique obligatoire pour la production sur Android
-      if (Platform.OS === 'android') {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
-          {
-            title: "Autorisation du microphone",
-            message: "L'application requiert l'accès à votre microphone pour permettre la recherche vocale de jeux vidéo.",
-            buttonNeutral: "Plus tard",
-            buttonNegative: "Annuler",
-            buttonPositive: "Autoriser"
-          }
-        );
-
-        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-          Alert.alert(
-            "Autorisation refusée",
-            "La recherche vocale ne peut pas fonctionner sans accès au microphone."
-          );
-          return;
-        }
+      const permission = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert("Permission refusée", "Le micro est requis pour la dictée vocale.");
+        return;
       }
 
-      await Voice.start('fr-FR');
+      ExpoSpeechRecognitionModule.start({
+        lang: 'fr-FR',
+        interimResults: true,
+        continuous: false,
+      });
     } catch (e: any) {
-      console.error("Erreur de démarrage vocal:", e);
-      Alert.alert(
-        "Détail du blocage",
-        `Erreur exacte : ${e.message || JSON.stringify(e)}`
-      );
+      console.error(e);
+      Alert.alert("Erreur", "Impossible de lancer la reconnaissance.");
     }
   };
 
-  const stopListening = async () => {
-    try {
-      await Voice.stop();
-    } catch (e) {
-      console.error("Erreur d'arrêt vocal:", e);
-    }
+  const stopListening = () => {
+    ExpoSpeechRecognitionModule.stop();
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>
-        {isListening ? `J'écoute... ${partialResult}` : placeholder}
+      {/* Texte d'état */}
+      <Text style={[styles.text, isListening && styles.textListening]} numberOfLines={1}>
+        {isListening ? (partialResult ? partialResult : "J'écoute…") : placeholder}
       </Text>
 
-      <TouchableOpacity
-        style={[styles.button, isListening && styles.buttonActive]}
-        onPress={isListening ? stopListening : startListening}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.buttonText}>{isListening ? '🛑' : '🎤'}</Text>
-      </TouchableOpacity>
+      {/* Bouton avec halo pulsant */}
+      <View style={styles.buttonWrapper}>
+        {/* Anneau d'onde animé */}
+        <Animated.View
+          style={[
+            styles.pulseRing,
+            {
+              transform: [{ scale: pulseAnim }],
+              opacity: opacityAnim,
+            },
+          ]}
+        />
+
+        <TouchableOpacity
+          style={[styles.button, isListening && styles.buttonActive]}
+          onPress={isListening ? stopListening : startListening}
+          activeOpacity={0.8}
+        >
+          <MaterialCommunityIcons
+            name={isListening ? 'stop' : 'microphone'}
+            size={24}
+            color="#fff"
+          />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
+const BUTTON_SIZE = 52;
+
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    marginVertical: 10,
+    marginVertical: 12,
     width: '100%',
+    gap: 10,
   },
   text: {
-    marginBottom: 8,
-    fontSize: 14,
+    fontSize: 13,
     color: '#888',
     fontWeight: '500',
     textAlign: 'center',
+    maxWidth: '85%',
   },
-  button: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: '#272727',
-    justifyContent: 'center',
+  textListening: {
+    color: '#aaa',
+    fontStyle: 'italic',
+  },
+  buttonWrapper: {
+    width: BUTTON_SIZE,
+    height: BUTTON_SIZE,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    justifyContent: 'center',
   },
-  buttonActive: {
+  pulseRing: {
+    position: 'absolute',
+    width: BUTTON_SIZE,
+    height: BUTTON_SIZE,
+    borderRadius: BUTTON_SIZE / 2,
     backgroundColor: '#ff4444',
   },
-  buttonText: {
-    fontSize: 22,
+  button: {
+    width: BUTTON_SIZE,
+    height: BUTTON_SIZE,
+    borderRadius: BUTTON_SIZE / 2,
+    backgroundColor: '#2c2c2e',
+    justifyContent: 'center',
+    alignItems: 'center',
+    // Bordure subtile
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    // Ombre portée
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
+    elevation: 8,
+  },
+  buttonActive: {
+    backgroundColor: '#c0392b',
+    borderColor: 'rgba(255,100,100,0.3)',
+    shadowColor: '#ff4444',
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
   },
 });

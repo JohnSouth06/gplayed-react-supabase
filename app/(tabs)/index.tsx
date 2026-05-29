@@ -233,11 +233,6 @@ export default function DashboardScreen() {
     } catch (e) { setResults([]); } finally { setSearching(false); }
   };
 
-  const handleVoiceSearch = (spokenText: string) => {
-    setSearchQuery(spokenText);
-    handleSearch(spokenText);
-  };
-
   const handleAddGame = async (gameData: any) => {
     try {
       const user = await getCurrentUser();
@@ -686,6 +681,15 @@ const getStatusColor = (displayStatus: string) => {
                   onSubmitEditing={handleSearch}
                   autoFocus
                 />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity
+                    onPress={() => { setSearchQuery(''); setResults([]); }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={{ marginLeft: 6 }}
+                  >
+                    <MaterialCommunityIcons name="close-circle" size={17} color={currentTheme.textMuted} />
+                  </TouchableOpacity>
+                )}
               </View>
               <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeSearchBtn}>
                 <Text style={styles.closeText}>Fermer</Text>
@@ -693,7 +697,8 @@ const getStatusColor = (displayStatus: string) => {
             </View>
 
             <VoiceSearchInput 
-              onSearch={handleVoiceSearch} 
+              onSearch={setSearchQuery} 
+              onSubmit={(finalText) => handleSearch(finalText)}
               placeholder="...ou appuyez pour dicter" 
             />
             
