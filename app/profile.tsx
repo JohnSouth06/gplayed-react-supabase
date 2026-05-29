@@ -8,19 +8,19 @@ import { Stack, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator, Alert, Image, ScrollView, Switch,
-  Text, TouchableOpacity, View
+  Text, TextInput, TouchableOpacity, View
 } from 'react-native';
 import { DarkTheme, LightTheme, MintTheme } from '../constants/Theme';
 import { useCustomTheme } from '../context/ThemeContext';
 import { getProfileStyles } from '../styles/profile.styles';
 
-export default function ProfileScreen() { 
-  const { theme: currentTheme, themeType, setTheme } = useCustomTheme(); 
+export default function ProfileScreen() {
+  const { theme: currentTheme, themeType, setTheme } = useCustomTheme();
   const accentColor = currentTheme.primary;
 
-  const { sectionStyles, menuStyles, styles } = useMemo(() => 
-    getProfileStyles(currentTheme, accentColor, currentTheme.primaryDim), 
-  [currentTheme, accentColor]);
+  const { sectionStyles, menuStyles, styles } = useMemo(() =>
+    getProfileStyles(currentTheme, accentColor, currentTheme.primaryDim),
+    [currentTheme, accentColor]);
 
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -28,6 +28,8 @@ export default function ProfileScreen() {
   const [profile, setProfile] = useState<{ username: string; avatar_url: string | null } | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [psnId, setPsnId] = useState('');
+  const [syncing, setSyncing] = useState(false);
   const router = useRouter();
 
   useEffect(() => { fetchProfile(); }, []);
@@ -37,9 +39,18 @@ export default function ProfileScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setUserId(user.id);
-      const { data, error } = await supabase.from('profiles').select('username, avatar_url').eq('id', user.id).maybeSingle();
+      
+      // Ajout de psn_id dans le select
+      const { data, error } = await supabase.from('profiles').select('username, avatar_url, psn_id').eq('id', user.id).maybeSingle();
+      
       if (error) throw error;
       setProfile(data);
+      
+      // On pré-remplit le champ texte si le pseudo existe déjà
+      if (data && data.psn_id) {
+        setPsnId(data.psn_id);
+      }
+      
     } catch (error: any) { console.error(error.message); } finally { setLoading(false); }
   }
 
@@ -54,7 +65,7 @@ export default function ProfileScreen() {
   const pickAndUploadAvatar = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true, aspect: [1, 1], quality: 1, 
+      allowsEditing: true, aspect: [1, 1], quality: 1,
     });
     if (result.canceled || !userId) return;
     setUploading(true);
@@ -88,9 +99,11 @@ export default function ProfileScreen() {
   const confirmDelete = () => {
     Alert.alert("Supprimer le compte", "Cette action est irréversible. Toutes vos données de collection seront effacées définitivement.", [
       { text: "Annuler", style: "cancel" },
-      { text: "Supprimer définitivement", style: "destructive", onPress: async () => {
+      {
+        text: "Supprimer définitivement", style: "destructive", onPress: async () => {
           try { setLoading(true); await deleteAccount(); } catch (e: any) { Alert.alert("Erreur", e.message); } finally { setLoading(false); }
-      }}
+        }
+      }
     ]);
   };
 
@@ -99,6 +112,48 @@ export default function ProfileScreen() {
   }
 
   const initials = profile?.username?.charAt(0).toUpperCase() ?? '?';
+
+  const handleSyncPsn = async () => {
+    if (!psnId.trim()) {
+      Alert.alert("Erreur", "Veuillez entrer un pseudo PSN valide.");
+      return;
+    }
+
+    setSyncing(true);
+    try {
+      // 1. Sauvegarde du pseudo dans le profil Supabase si l'id utilisateur est présent
+      if (userId) {
+        const { error: dbError } = await supabase
+          .from('profiles')
+          .update({ psn_id: psnId.trim() })
+          .eq('id', userId);
+
+        if (dbError) throw dbError;
+      }
+
+      // 2. Déclenchement de la synchronisation via les routes d'API arrière-plan
+      const response = await fetch('http://87.106.8.127:3000/sync-psn', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          userId: userId, 
+          psnId: psnId.trim() 
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        Alert.alert("Succès", "Vos trophées ont été synchronisés avec succès !");
+      } else {
+        Alert.alert("Erreur", result.error || "Une erreur est survenue lors de la récupération.");
+      }
+    } catch (error: any) {
+      Alert.alert("Erreur", error.message || "Impossible de joindre le serveur de synchronisation.");
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   // --- COMPOSANTS INTERNES UTILISANT LES NOUVEAUX STYLES ---
   const SectionTitle = ({ label, icon, danger }: any) => (
@@ -119,79 +174,79 @@ export default function ProfileScreen() {
   );
 
   const ThemeOption = ({ label, isActive, onPress, color, currentTheme, accentColor }: any) => (
-  <TouchableOpacity style={menuStyles.item} onPress={onPress} activeOpacity={0.7}>
-    <View style={[menuStyles.iconWrap, { backgroundColor: `${color}15` }]}>
-      <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: color }} />
-    </View>
-    <Text style={menuStyles.label}>{label}</Text>
-    <MaterialCommunityIcons 
-      name={isActive ? "radiobox-marked" : "radiobox-blank"} 
-      size={22} 
-      color={isActive ? accentColor : currentTheme.textMuted} 
-    />
-  </TouchableOpacity>
-);
-
-const ThemeToggle = () => {
-  const options = [
-   { 
-      id: 'mint', 
-      label: 'Mint', 
-      icon: 'leaf', 
-      color: MintTheme.primary 
-    },
-    { 
-      id: 'light', 
-      label: 'Clair', 
-      icon: 'white-balance-sunny', 
-      color: LightTheme.primary
-    },
-    { 
-      id: 'dark', 
-      label: 'Sombre', 
-      icon: 'moon-waning-crescent', 
-      color: DarkTheme.primary
-    },
-  ];
-
-  return (
-    <View style={styles.segmentedContainer}>
-      {options.map((opt) => {
-        const isActive = themeType === opt.id;
-        return (
-          <TouchableOpacity
-            key={opt.id}
-            style={[
-              styles.segmentedButton,
-              isActive && { backgroundColor: `${opt.color}20` }
-            ]}
-            onPress={() => setTheme(opt.id as any)}
-            activeOpacity={0.8}
-          >
-            <MaterialCommunityIcons 
-              name={opt.icon as any} 
-              size={18} 
-              color={isActive ? opt.color : currentTheme.textMuted} 
-            />
-            <Text style={[
-              styles.segmentedLabel, 
-              { color: isActive ? currentTheme.textPrimary : currentTheme.textMuted }
-            ]}>
-              {opt.label}
-            </Text>
-            {isActive && <View style={[styles.activeIndicator, { backgroundColor: opt.color }]} />}
-          </TouchableOpacity>
-        );
-      })}
-    </View>
+    <TouchableOpacity style={menuStyles.item} onPress={onPress} activeOpacity={0.7}>
+      <View style={[menuStyles.iconWrap, { backgroundColor: `${color}15` }]}>
+        <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: color }} />
+      </View>
+      <Text style={menuStyles.label}>{label}</Text>
+      <MaterialCommunityIcons
+        name={isActive ? "radiobox-marked" : "radiobox-blank"}
+        size={22}
+        color={isActive ? accentColor : currentTheme.textMuted}
+      />
+    </TouchableOpacity>
   );
-};
+
+  const ThemeToggle = () => {
+    const options = [
+      {
+        id: 'mint',
+        label: 'Mint',
+        icon: 'leaf',
+        color: MintTheme.primary
+      },
+      {
+        id: 'light',
+        label: 'Clair',
+        icon: 'white-balance-sunny',
+        color: LightTheme.primary
+      },
+      {
+        id: 'dark',
+        label: 'Sombre',
+        icon: 'moon-waning-crescent',
+        color: DarkTheme.primary
+      },
+    ];
+
+    return (
+      <View style={styles.segmentedContainer}>
+        {options.map((opt) => {
+          const isActive = themeType === opt.id;
+          return (
+            <TouchableOpacity
+              key={opt.id}
+              style={[
+                styles.segmentedButton,
+                isActive && { backgroundColor: `${opt.color}20` }
+              ]}
+              onPress={() => setTheme(opt.id as any)}
+              activeOpacity={0.8}
+            >
+              <MaterialCommunityIcons
+                name={opt.icon as any}
+                size={18}
+                color={isActive ? opt.color : currentTheme.textMuted}
+              />
+              <Text style={[
+                styles.segmentedLabel,
+                { color: isActive ? currentTheme.textPrimary : currentTheme.textMuted }
+              ]}>
+                {opt.label}
+              </Text>
+              {isActive && <View style={[styles.activeIndicator, { backgroundColor: opt.color }]} />}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    );
+  };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      <Stack.Screen options={{ 
-        headerTitle: "Profil", headerStyle: { backgroundColor: currentTheme.bg }, 
-        headerShadowVisible: false, headerTintColor: currentTheme.textPrimary, headerBackTitle: "Retour" 
+      <Stack.Screen options={{
+        headerTitle: "Profil", headerStyle: { backgroundColor: currentTheme.bg },
+        headerShadowVisible: false, headerTintColor: currentTheme.textPrimary, headerBackTitle: "Retour"
       }} />
 
       <View style={styles.header}>
@@ -226,6 +281,59 @@ const ThemeToggle = () => {
           <View style={[styles.menuIconWrap, { backgroundColor: `rgba(122,140,134,0.15)` }]}><MaterialCommunityIcons name="bell-outline" size={17} color={currentTheme.textSecondary} /></View>
           <Text style={styles.menuText}>Notifications Push</Text>
           <Switch value={notificationsEnabled} onValueChange={setNotificationsEnabled} trackColor={{ false: currentTheme.border, true: `${accentColor}99` }} thumbColor={notificationsEnabled ? accentColor : currentTheme.surfaceHigh} />
+        </View>
+      </View>
+
+      <SectionTitle label="PlayStation Network" icon="controller-classic-outline" />
+      <View style={styles.card}>
+        <View style={[styles.menuItem, { flexDirection: 'column', alignItems: 'stretch', gap: 10, paddingVertical: 14 }]}>
+          <Text style={[styles.menuText, { color: currentTheme.textSecondary }]}>Identifiant de suivi</Text>
+
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
+            <TextInput
+              style={{
+                flex: 1,
+                height: 42,
+                borderWidth: 1,
+                borderColor: currentTheme.border,
+                borderRadius: 8,
+                paddingHorizontal: 12,
+                color: currentTheme.textSecondary,
+                backgroundColor: currentTheme.surfaceHigh,
+              }}
+              placeholder="Ex: Player_One"
+              placeholderTextColor={currentTheme.textMuted}
+              value={psnId}
+              onChangeText={setPsnId}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+
+            <TouchableOpacity
+              style={{
+                backgroundColor: accentColor,
+                paddingHorizontal: 16,
+                borderRadius: 8,
+                justifyContent: 'center',
+                alignItems: 'center',
+                minWidth: 110,
+                opacity: syncing ? 0.7 : 1
+              }}
+              onPress={handleSyncPsn}
+              disabled={syncing}
+              activeOpacity={0.7}
+            >
+              {syncing ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={{ color: '#fff', fontWeight: '600', fontSize: 13 }}>Synchroniser</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          <Text style={{ fontSize: 11, color: currentTheme.textMuted, marginTop: 4, lineHeight: 15 }}>
+            Important : Les paramètres de confidentialité du compte PlayStation doivent être configurés sur "Tout le monde" pour l'accès aux trophées.
+          </Text>
         </View>
       </View>
 
