@@ -4,13 +4,9 @@ import {
   useSpeechRecognitionEvent,
 } from 'expo-speech-recognition';
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Animated, Easing, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, Easing, Text, TouchableOpacity, View } from 'react-native';
+import { styles } from '../styles/VoiceSearchInput.styles';
 
-// ---------------------------------------------------------------------------
-// Dictionnaire de corrections phonétiques
-// Ajouter ici toute paire (mauvaise transcription → valeur correcte).
-// Les clés sont en minuscules ; la comparaison est insensible à la casse.
-// ---------------------------------------------------------------------------
 const PHONETIC_CORRECTIONS: Record<string, string> = {
   // Ghost of Yotei
   'you take':   'Yotei',
@@ -29,10 +25,7 @@ const PHONETIC_CORRECTIONS: Record<string, string> = {
   'the legend of zelda': 'The Legend of Zelda',
 };
 
-/**
- * Applique les corrections phonétiques sur le texte brut du moteur vocal.
- * Remplace toutes les occurrences connues (insensible à la casse).
- */
+
 function applyPhoneticCorrections(text: string): string {
   let corrected = text;
   for (const [wrong, right] of Object.entries(PHONETIC_CORRECTIONS)) {
