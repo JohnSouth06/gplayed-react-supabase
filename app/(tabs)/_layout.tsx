@@ -143,7 +143,7 @@ export default function TabLayout() {
         name="psntrophies"
         options={{
           title: 'Trophées',
-          tabBarActiveTintColor: currentTheme.blue, // Utilise le bleu pour contraster
+          tabBarActiveTintColor: currentTheme.trophies, // Utilise le bleu pour contraster
           tabBarIcon: ({ color, focused }) => (
             <TabIcon name="trophy-outline" color={color} focused={focused} />
           ),
