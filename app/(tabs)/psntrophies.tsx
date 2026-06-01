@@ -1,8 +1,9 @@
 // app/(tabs)/psntrophies.tsx
+import { syncGameTrophies } from '@/api/psn';
 import { supabase } from '@/lib/supabase';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, RefreshControl, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, Image, Linking, Modal, RefreshControl, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useCustomTheme } from '../../context/ThemeContext';
 import { getCollectionStyles } from '../../styles/psntrophies.styles';
 
@@ -20,7 +21,77 @@ export default function PsnTrophiesScreen() {
   // Nouveaux états pour la recherche et le tri
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'recent' | 'progress' | 'title'>('recent');
+  
+  // Nouveaux états pour la modale
+  const [selectedGame, setSelectedGame] = useState<any>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [trophiesList, setTrophiesList] = useState<any[]>([]);
+  const [loadingTrophies, setLoadingTrophies] = useState(false);
 
+  // Fonction pour ouvrir la modale et charger les trophées
+  const handleOpenGame = async (game: any) => {
+    setSelectedGame(game);
+    setModalVisible(true);
+    setLoadingTrophies(true);
+
+    try {
+      // 1. Récupérer l'utilisateur connecté
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // 2. Aller chercher le pseudo PSN dans la table de profil
+      const { data: userProfile, error: profileError } = await supabase
+        .from('profiles') 
+        .select('psn_id') 
+        .eq('id', user.id)
+        .single();
+
+      if (profileError || !userProfile?.psn_id) {
+        console.error("Pseudo PSN introuvable !");
+        // Tu pourrais afficher une petite alerte ici
+        setLoadingTrophies(false);
+        return; 
+      }
+
+      const userPsnId = userProfile.psn_id;
+
+      // 3. On déclenche la synchro paresseuse avec le VRAI pseudo
+      await syncGameTrophies(user.id, userPsnId, game.np_communication_id); 
+
+      // On récupère la liste fusionnée depuis nos tables Supabase
+      const { data: globalTrophies } = await supabase
+        .from('psn_trophies')
+        .select('*')
+        .eq('np_communication_id', game.np_communication_id);
+
+      const { data: userTrophies } = await supabase
+        .from('user_psn_trophies')
+        .select('*')
+        .eq('np_communication_id', game.np_communication_id)
+        .eq('user_id', user.id);
+
+      if (globalTrophies) {
+        const merged = globalTrophies.map(gt => {
+          const ut = userTrophies?.find(u => u.trophy_id === gt.trophy_id);
+          return { ...gt, earned: ut ? ut.earned : false };
+        });
+
+        // TRI : Non obtenus en premier, puis obtenus
+        merged.sort((a, b) => (a.earned === b.earned ? 0 : a.earned ? 1 : -1));
+        setTrophiesList(merged);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoadingTrophies(false);
+    }
+  };
+
+  const searchYoutube = (gameName: string, trophyName: string) => {
+    const query = encodeURIComponent(`${gameName} ${trophyName} trophy guide`);
+    Linking.openURL(`https://www.youtube.com/results?search_query=${query}`);
+  };
+  
   useEffect(() => {
     fetchGames();
   }, []);
@@ -84,9 +155,6 @@ export default function PsnTrophiesScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Le composant Stack.Screen a été supprimé. 
-        Le layout global gérera l'affichage du logo GPlayed et de l'avatar.
-      */}
 
       <FlatList
         data={processedGames}
@@ -99,7 +167,6 @@ export default function PsnTrophiesScreen() {
         
         ListHeaderComponent={
           <View>
-            {/* 1. Titre de la page avec compteurs */}
             <View style={styles.headerRow}>
               <View>
                 <View style={styles.headerTitleRow}>
@@ -114,7 +181,6 @@ export default function PsnTrophiesScreen() {
               </View>
             </View>
 
-            {/* 2. Barre de recherche et bouton de tri */}
             {games.length > 0 && (
               <View style={styles.searchRow}>
                 <View style={styles.collectionSearchContainer}>
@@ -134,7 +200,6 @@ export default function PsnTrophiesScreen() {
                   )}
                 </View>
 
-                {/* Bouton pour changer de tri rapidement */}
                 <TouchableOpacity 
                   style={styles.sortButton} 
                   onPress={() => setSortBy(sortBy === 'recent' ? 'progress' : sortBy === 'progress' ? 'title' : 'recent')}
@@ -161,7 +226,7 @@ export default function PsnTrophiesScreen() {
         }
 
         renderItem={({ item }) => (
-          <View style={styles.card}>
+          <TouchableOpacity style={styles.card} onPress={() => handleOpenGame(item)} activeOpacity={0.7}>
             <Image source={{ uri: item.game_image_url }} style={styles.cover} />
             
             <View style={styles.info}>
@@ -187,9 +252,59 @@ export default function PsnTrophiesScreen() {
             </View>
 
             <Text style={styles.progressText}>{item.progress}%</Text>
-          </View>
+          </TouchableOpacity>
         )}
       />
+
+      <Modal visible={modalVisible} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setModalVisible(false)}>
+        <View style={{ flex: 1, backgroundColor: currentTheme.bg, padding: 20 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20, marginTop: 10 }}>
+            <Text style={{ fontSize: 22, fontWeight: 'bold', color: currentTheme.textPrimary }}>
+              {selectedGame?.game_name}
+            </Text>
+            <TouchableOpacity onPress={() => setModalVisible(false)}>
+              <MaterialCommunityIcons name="close" size={28} color={currentTheme.textPrimary} />
+            </TouchableOpacity>
+          </View>
+
+          {loadingTrophies ? (
+            <ActivityIndicator size="large" color={currentTheme.trophies} style={{ marginTop: 50 }} />
+          ) : (
+            <FlatList
+              data={trophiesList}
+              keyExtractor={(item) => item.trophy_id.toString()}
+              renderItem={({ item }) => (
+                <View style={{
+                  flexDirection: 'row', 
+                  padding: 15, 
+                  backgroundColor: currentTheme.surface, 
+                  borderRadius: 12, 
+                  marginBottom: 10,
+                  alignItems: 'center',
+                  opacity: item.earned ? 0.7 : 1 
+                }}>
+                  <Image source={{ uri: item.trophy_icon_url }} style={{ width: 50, height: 50, borderRadius: 8, marginRight: 15 }} />
+                  
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: currentTheme.textPrimary, fontWeight: 'bold', fontSize: 16 }}>{item.trophy_name}</Text>
+                    <Text style={{ color: currentTheme.textSecondary, fontSize: 13, marginTop: 4 }}>{item.trophy_description}</Text>
+                  </View>
+
+                  {item.earned ? (
+                    // Coche d'accomplissement (couleur mint/primaire de ton thème)
+                    <MaterialCommunityIcons name="check-circle" size={28} color={currentTheme.primary} />
+                  ) : (
+                    // Bouton YouTube pour les trophées non obtenus
+                    <TouchableOpacity onPress={() => searchYoutube(selectedGame.game_name, item.trophy_name)} style={{ padding: 8 }}>
+                      <MaterialCommunityIcons name="youtube" size={28} color="#FF0000" />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+            />
+          )}
+        </View>
+      </Modal>
     </View>
   );
 }

@@ -1,47 +1,65 @@
-// api/psn.ts
 import {
   exchangeCodeForAccessToken,
   exchangeNpssoForCode,
   getProfileFromUserName,
-  getUserTitles
+  getTitleTrophies,
+  getUserTrophiesEarnedForTitle
 } from "psn-api";
-import { supabase } from '../lib/supabase'; // Ajuste si nécessaire pour le client serveur
+import { supabase } from '../lib/supabase';
 
-export const syncUserPsnData = async (userId: string, psnId: string) => {
+export const syncGameTrophies = async (userId: string, psnId: string, npCommunicationId: string) => {
   try {
-    // 1. Authentification du bot
+    // 1. Auth Bot (tu peux extraire ça dans une fonction utilitaire pour ne pas le répéter)
     const accessCode = await exchangeNpssoForCode(process.env.BOT_PSN_NPSSO as string);
     const authorization = await exchangeCodeForAccessToken(accessCode);
 
-    // 2. Récupération de l'accountId de l'utilisateur
+    // 2. Vérifier si les trophées du jeu existent déjà dans la base globale
+    const { data: existingTrophies } = await supabase
+      .from('psn_trophies')
+      .select('trophy_id')
+      .eq('np_communication_id', npCommunicationId)
+      .limit(1);
+
+    // S'ils n'existent pas, on récupère la liste complète via PSN et on l'enregistre pour tout le monde
+    if (!existingTrophies || existingTrophies.length === 0) {
+      const { trophies: baseTrophies } = await getTitleTrophies(authorization, npCommunicationId, "all");
+      
+      const trophiesToInsert = baseTrophies.map(t => ({
+        np_communication_id: npCommunicationId,
+        trophy_id: t.trophyId,
+        trophy_name: t.trophyName,
+        trophy_description: t.trophyDetail,
+        trophy_icon_url: t.trophyIconUrl,
+        trophy_type: t.trophyType
+      }));
+
+      await supabase.from('psn_trophies').insert(trophiesToInsert);
+    }
+
+    // 3. Récupérer les trophées OBTENUS par l'utilisateur spécifique
     const profile = await getProfileFromUserName(authorization, psnId);
-    const accountId = profile.profile.accountId;
+    const { trophies: userEarned } = await getUserTrophiesEarnedForTitle(
+      authorization, 
+      profile.profile.accountId, 
+      npCommunicationId, 
+      "all"
+    );
 
-    // 3. Récupération de la liste des jeux
-    const userGames = await getUserTitles(authorization, accountId);
-
-    // 4. Formatage des données pour Supabase
-    const gamesToInsert = userGames.trophyTitles.map((game: any) => ({
+    // Enregistrer la progression de l'utilisateur
+    const userTrophiesToUpsert = userEarned.map(t => ({
       user_id: userId,
-      np_communication_id: game.npCommunicationId,
-      game_name: game.trophyTitleName,
-      game_image_url: game.trophyTitleIconUrl,
-      earned_trophies: game.earnedTrophies.bronze + game.earnedTrophies.silver + game.earnedTrophies.gold + game.earnedTrophies.platinum,
-      total_trophies: game.definedTrophies.bronze + game.definedTrophies.silver + game.definedTrophies.gold + game.definedTrophies.platinum,
-      progress: game.progress
+      np_communication_id: npCommunicationId,
+      trophy_id: t.trophyId,
+      earned: t.earned
     }));
 
-    // 5. Insertion ou mise à jour (Upsert) dans Supabase
-    const { error: dbError } = await supabase
-      .from('user_psn_games')
-      .upsert(gamesToInsert, { onConflict: 'user_id, np_communication_id' });
+    await supabase.from('user_psn_trophies').upsert(userTrophiesToUpsert, { 
+      onConflict: 'user_id, np_communication_id, trophy_id' 
+    });
 
-    if (dbError) throw dbError;
-
-    return { success: true, message: "Synchronisation réussie", gamesCount: gamesToInsert.length };
-
-  } catch (error: any) {
-    console.error("Erreur PSN Sync:", error);
-    return { success: false, error: "Impossible de synchroniser. Le profil est-il bien public ?" };
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de la récupération des trophées:", error);
+    return { success: false, error };
   }
 };
