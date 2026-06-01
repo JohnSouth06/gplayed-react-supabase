@@ -132,7 +132,7 @@ export default function ProfileScreen() {
       }
 
       // 2. Déclenchement de la synchronisation via les routes d'API arrière-plan
-      const response = await fetch('http://87.106.8.127:3000/sync-psn', {
+      const response = await fetch('https://api.g-played.com/sync-psn', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
