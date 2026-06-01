@@ -56,7 +56,7 @@ export default function PsnTrophiesScreen() {
       const userPsnId = userProfile.psn_id;
 
       // 3. On déclenche la synchro paresseuse avec le VRAI pseudo
-      await syncGameTrophies(user.id, userPsnId, game.np_communication_id); 
+      await syncGameTrophies(user.id, userPsnId, game);
 
       // On récupère la liste fusionnée depuis nos tables Supabase
       const { data: globalTrophies } = await supabase
@@ -256,53 +256,97 @@ export default function PsnTrophiesScreen() {
         )}
       />
 
-      <Modal visible={modalVisible} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setModalVisible(false)}>
-        <View style={{ flex: 1, backgroundColor: currentTheme.bg, padding: 20 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20, marginTop: 10 }}>
-            <Text style={{ fontSize: 22, fontWeight: 'bold', color: currentTheme.textPrimary }}>
-              {selectedGame?.game_name}
-            </Text>
-            <TouchableOpacity onPress={() => setModalVisible(false)}>
-              <MaterialCommunityIcons name="close" size={28} color={currentTheme.textPrimary} />
+      <Modal visible={modalVisible} animationType="slide" presentationStyle="formSheet" onRequestClose={() => setModalVisible(false)}>
+        <View style={{ flex: 1, backgroundColor: currentTheme.bg }}>
+          
+          {/* HEADER AVEC IMAGE DE COUVERTURE (Style index.tsx) */}
+          <View style={{ height: 220, position: 'relative' }}>
+            <Image 
+              source={{ uri: selectedGame?.game_image_url }} 
+              style={{ width: '100%', height: '100%', resizeMode: 'cover' }} 
+            />
+            {/* Voile sombre pour faire ressortir le texte */}
+            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)' }} />
+            
+            {/* Bouton de fermeture flottant */}
+            <TouchableOpacity 
+              onPress={() => setModalVisible(false)}
+              style={{ 
+                position: 'absolute', top: 15, right: 15, 
+                backgroundColor: 'rgba(0,0,0,0.6)', 
+                padding: 8, borderRadius: 20 
+              }}
+            >
+              <MaterialCommunityIcons name="close" size={24} color="#FFF" />
             </TouchableOpacity>
+
+            {/* Titre du jeu */}
+            <View style={{ position: 'absolute', bottom: 15, left: 20, right: 20 }}>
+              <Text style={{ 
+                fontSize: 26, fontWeight: '900', color: '#FFF',
+                textShadowColor: 'rgba(0, 0, 0, 0.8)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 6
+              }}>
+                {selectedGame?.game_name}
+              </Text>
+            </View>
           </View>
 
-          {loadingTrophies ? (
-            <ActivityIndicator size="large" color={currentTheme.trophies} style={{ marginTop: 50 }} />
-          ) : (
-            <FlatList
-              data={trophiesList}
-              keyExtractor={(item) => item.trophy_id.toString()}
-              renderItem={({ item }) => (
-                <View style={{
-                  flexDirection: 'row', 
-                  padding: 15, 
-                  backgroundColor: currentTheme.surface, 
-                  borderRadius: 12, 
-                  marginBottom: 10,
-                  alignItems: 'center',
-                  opacity: item.earned ? 0.7 : 1 
-                }}>
-                  <Image source={{ uri: item.trophy_icon_url }} style={{ width: 50, height: 50, borderRadius: 8, marginRight: 15 }} />
-                  
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ color: currentTheme.textPrimary, fontWeight: 'bold', fontSize: 16 }}>{item.trophy_name}</Text>
-                    <Text style={{ color: currentTheme.textSecondary, fontSize: 13, marginTop: 4 }}>{item.trophy_description}</Text>
-                  </View>
+          {/* CONTENU DE LA MODALE */}
+          <View style={{ flex: 1, paddingHorizontal: 15, paddingTop: 20 }}>
+            {loadingTrophies ? (
+              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <ActivityIndicator size="large" color={currentTheme.trophies} />
+                <Text style={{ color: currentTheme.textSecondary, marginTop: 15 }}>Synchronisation en cours...</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={trophiesList}
+                keyExtractor={(item) => item.trophy_id.toString()}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 40 }}
+                renderItem={({ item }) => (
+                  <View style={{
+                    flexDirection: 'row', 
+                    padding: 15, 
+                    backgroundColor: currentTheme.surface, 
+                    borderRadius: 16, 
+                    marginBottom: 12,
+                    alignItems: 'center',
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 4,
+                    elevation: 3,
+                    opacity: item.earned ? 0.6 : 1 // Effet discret pour les trophées validés
+                  }}>
+                    <Image source={{ uri: item.trophy_icon_url }} style={{ width: 55, height: 55, borderRadius: 10, marginRight: 15 }} />
+                    
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: currentTheme.textPrimary, fontWeight: 'bold', fontSize: 16, marginBottom: 4 }}>
+                        {item.trophy_name}
+                      </Text>
+                      <Text style={{ color: currentTheme.textSecondary, fontSize: 13, lineHeight: 18 }}>
+                        {item.trophy_description}
+                      </Text>
+                    </View>
 
-                  {item.earned ? (
-                    // Coche d'accomplissement (couleur mint/primaire de ton thème)
-                    <MaterialCommunityIcons name="check-circle" size={28} color={currentTheme.primary} />
-                  ) : (
-                    // Bouton YouTube pour les trophées non obtenus
-                    <TouchableOpacity onPress={() => searchYoutube(selectedGame.game_name, item.trophy_name)} style={{ padding: 8 }}>
-                      <MaterialCommunityIcons name="youtube" size={28} color="#FF0000" />
-                    </TouchableOpacity>
-                  )}
-                </View>
-              )}
-            />
-          )}
+                    <View style={{ marginLeft: 10 }}>
+                      {item.earned ? (
+                        <MaterialCommunityIcons name="check-decagram" size={32} color={currentTheme.primary || "#4CAF50"} />
+                      ) : (
+                        <TouchableOpacity 
+                          onPress={() => searchYoutube(selectedGame.game_name, item.trophy_name)} 
+                          style={{ padding: 8, backgroundColor: 'rgba(255, 0, 0, 0.1)', borderRadius: 12 }}
+                        >
+                          <MaterialCommunityIcons name="youtube" size={26} color="#FF0000" />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  </View>
+                )}
+              />
+            )}
+          </View>
         </View>
       </Modal>
     </View>
