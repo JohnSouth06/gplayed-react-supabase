@@ -56,6 +56,18 @@
             "buildToolsVersion": "35.0.0"
           }
         }
+      ],
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/SpaceGrotesk_300Light.ttf",
+            "./assets/fonts/SpaceGrotesk_400Regular.ttf",
+            "./assets/fonts/SpaceGrotesk_500Medium.ttf",
+            "./assets/fonts/SpaceGrotesk_600SemiBold.ttf",
+            "./assets/fonts/SpaceGrotesk_700Bold.ttf"
+          ]
+        }
       ]
     ],
     "experiments": {
