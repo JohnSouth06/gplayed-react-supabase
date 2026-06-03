@@ -1,12 +1,12 @@
 // app/(tabs)/index.tsx
+import { Text } from '@/components/Themed';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator, Alert, FlatList, Image, Modal,
-  RefreshControl, ScrollView,
-  Text, TextInput, TouchableOpacity,
+  RefreshControl, ScrollView, TextInput, TouchableOpacity,
   View
 } from 'react-native';
 import { Shadow } from 'react-native-shadow-2';
@@ -295,6 +295,8 @@ const getStatusColor = (displayStatus: string) => {
         keyExtractor={(item) => item.id}
         columnWrapperStyle={viewMode === 'grid' ? styles.row : undefined}
         contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        showsHorizontalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchGames} tintColor={accentColor} />}
 
         ListHeaderComponent={
@@ -477,7 +479,7 @@ const getStatusColor = (displayStatus: string) => {
       />
 
       {/* --- MODALE DE DÉTAIL --- */}
-      <Modal visible={detailModalVisible} animationType="slide" transparent>
+      <Modal visible={detailModalVisible} animationType="slide" transparent onRequestClose={() => setModalVisible(false)}>
         <View style={styles.detailModalOverlay}>
           <View style={styles.detailModalContent}>
             {selectedGame && (
@@ -639,7 +641,7 @@ const getStatusColor = (displayStatus: string) => {
         </View>
       </Modal>
 
-      <Modal visible={sortModalVisible} transparent animationType="fade">
+      <Modal visible={sortModalVisible} transparent animationType="fade" onRequestClose={() => setSortModalVisible(false)}>
         <TouchableOpacity style={styles.modalOverlay} onPress={() => setSortModalVisible(false)} activeOpacity={1}>
           <View style={styles.sortModalContent}>
             <View style={styles.sortModalHandle} />
@@ -665,7 +667,7 @@ const getStatusColor = (displayStatus: string) => {
         </TouchableOpacity>
       </Modal>
 
-      <Modal visible={modalVisible} animationType="slide" transparent>
+      <Modal visible={modalVisible} animationType="slide" transparent onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalSearchContainer}>
           <View style={styles.modalSearchContent}>
             <View style={styles.searchModalHandle} />
@@ -757,7 +759,7 @@ const getStatusColor = (displayStatus: string) => {
         </View>
       </Modal>
 
-      <Modal visible={viewerVisible} transparent animationType="fade" statusBarTranslucent>
+      <Modal visible={viewerVisible} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setViewerVisible(false)}>
         <View style={styles.viewerOverlay}>
           <TouchableOpacity style={styles.viewerCloseBtn} onPress={() => setViewerVisible(false)} activeOpacity={0.8}>
             <MaterialCommunityIcons name="close" size={22} color={currentTheme.textPrimary} />

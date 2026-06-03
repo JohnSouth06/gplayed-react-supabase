@@ -1,5 +1,6 @@
 // app/UpdatePasswordScreen.tsx
 import { updateUserPassword } from '@/api/auth';
+import { Text } from '@/components/Themed';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
@@ -7,7 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView, Platform,
-  Text, TextInput, TouchableOpacity, View
+  TextInput, TouchableOpacity, View
 } from 'react-native';
 import { useCustomTheme } from '../context/ThemeContext';
 import { getUpdatePasswordStyles } from '../styles/UpdatePasswordScreen.styles';

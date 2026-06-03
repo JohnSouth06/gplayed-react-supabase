@@ -1,8 +1,9 @@
 // app/(tabs)/psntrophies.tsx
+import { Text } from '@/components/Themed';
 import { supabase } from '@/lib/supabase';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Image, Linking, Modal, RefreshControl, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Image, Linking, Modal, RefreshControl, TextInput, TouchableOpacity, View } from 'react-native';
 import { useCustomTheme } from '../../context/ThemeContext';
 import { getCollectionStyles } from '../../styles/psntrophies.styles';
 
@@ -169,6 +170,7 @@ export default function PsnTrophiesScreen() {
         keyExtractor={(item) => item.np_communication_id}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        showsHorizontalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={currentTheme.trophies} />
         }
@@ -184,7 +186,7 @@ export default function PsnTrophiesScreen() {
                 </View>
                 <Text style={styles.count}>
                   <Text style={styles.countNum}>{processedGames.length}</Text>
-                  {` jeu${processedGames.length > 1 ? 'x' : ''} synchronisé${processedGames.length > 1 ? 's' : ''}`}
+                  {` ${processedGames.length > 1 ? 'jeux' : 'jeu'} synchronisé${processedGames.length > 1 ? 's' : ''}`}
                 </Text>
               </View>
             </View>

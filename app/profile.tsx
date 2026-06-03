@@ -1,5 +1,6 @@
 // app/profile.tsx
 import { deleteAccount, signOutUser } from '@/api/auth';
+import { Text } from '@/components/Themed';
 import { supabase } from '@/lib/supabase';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -8,7 +9,7 @@ import { Stack, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator, Alert, Image, ScrollView, Switch,
-  Text, TextInput, TouchableOpacity, View
+  TextInput, TouchableOpacity, View
 } from 'react-native';
 import { DarkTheme, LightTheme, MintTheme } from '../constants/Theme';
 import { useCustomTheme } from '../context/ThemeContext';

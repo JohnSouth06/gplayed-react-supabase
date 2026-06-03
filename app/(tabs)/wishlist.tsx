@@ -1,4 +1,5 @@
 // app/(tabs)/wishlist.tsx
+import { Text } from '@/components/Themed';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
@@ -6,7 +7,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator, Alert, FlatList, Image, Modal,
   RefreshControl, ScrollView,
-  Text, TextInput, TouchableOpacity,
+  TextInput, TouchableOpacity,
   View
 } from 'react-native';
 import { Shadow } from 'react-native-shadow-2';
@@ -369,6 +370,8 @@ export default function WishlistScreen() {
         keyExtractor={(item) => item.id}
         columnWrapperStyle={viewMode === 'grid' ? defaultStyles.row : undefined}
         contentContainerStyle={defaultStyles.listContent}
+        showsVerticalScrollIndicator={false}
+        showsHorizontalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchGames} tintColor={accentColor} />}
 
         ListHeaderComponent={
@@ -623,7 +626,7 @@ export default function WishlistScreen() {
         }
       />
 
-      <Modal visible={detailModalVisible} animationType="slide" transparent>
+      <Modal visible={detailModalVisible} animationType="slide" transparent onRequestClose={() => setModalVisible(false)}>
         <View style={defaultStyles.detailModalOverlay}>
           <View style={defaultStyles.detailModalContent}>
             {selectedGame && (
@@ -793,7 +796,7 @@ export default function WishlistScreen() {
         </View>
       </Modal>
 
-      <Modal visible={sortModalVisible} transparent animationType="fade">
+      <Modal visible={sortModalVisible} transparent animationType="fade" onRequestClose={() => setSortModalVisible(false)}>
         <TouchableOpacity style={defaultStyles.modalOverlay} onPress={() => setSortModalVisible(false)} activeOpacity={1}>
           <View style={defaultStyles.sortModalContent}>
             <View style={defaultStyles.sortModalHandle} />
@@ -819,7 +822,7 @@ export default function WishlistScreen() {
         </TouchableOpacity>
       </Modal>
 
-      <Modal visible={modalVisible} animationType="slide" transparent>
+      <Modal visible={modalVisible} animationType="slide" transparent onRequestClose={() => setModalVisible(false)}>
         <View style={defaultStyles.modalSearchContainer}>
           <View style={defaultStyles.modalSearchContent}>
             <View style={defaultStyles.searchModalHandle} />
@@ -899,7 +902,7 @@ export default function WishlistScreen() {
         </View>
       </Modal>
 
-      <Modal visible={viewerVisible} transparent animationType="fade" statusBarTranslucent>
+      <Modal visible={viewerVisible} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setViewerVisible(false)}>
         <View style={defaultStyles.viewerOverlay}>
           <TouchableOpacity style={defaultStyles.viewerCloseBtn} onPress={() => setViewerVisible(false)} activeOpacity={0.8}>
             <MaterialCommunityIcons name="close" size={22} color={currentTheme.textPrimary} />

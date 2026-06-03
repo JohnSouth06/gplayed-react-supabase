@@ -34,7 +34,7 @@ export const getCollectionStyles = (theme: any, trophiesColor: string, trophiesD
     },
     title: {
       fontSize: 26,
-      fontFamily: 'SpaceGrotesk_400Regular',
+      fontFamily: 'SpaceGrotesk_700Bold',
       color: theme.textPrimary,
       letterSpacing: 0.5,
     },

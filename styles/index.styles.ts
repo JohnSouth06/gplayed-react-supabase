@@ -124,7 +124,7 @@ export const getBaseStyles = (theme: typeof C, accentColor: string, accentColorD
     count: {
       color: theme.textSecondary,
       fontSize: 13,
-      fontFamily: 'SpaceGrotesk-Medium',
+      fontFamily: 'SpaceGrotesk_500Medium',
       marginTop: 10,
       marginLeft: 1,
     },
