@@ -1,15 +1,14 @@
-import 'react-native-url-polyfill/auto';
-import { supabase } from '../lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import LottieView from 'lottie-react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import 'react-native-url-polyfill/auto';
 import { ThemeProvider, useCustomTheme } from '../context/ThemeContext';
+import { supabase } from '../lib/supabase';
 
 SplashScreen.preventAutoHideAsync();
-
 
 function MainLayout() {
   const { theme } = useCustomTheme();
@@ -156,6 +155,18 @@ function MainLayout() {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded, fontError] = useFonts({
+    SpaceGrotesk_300Light,
+    SpaceGrotesk_400Regular,
+    SpaceGrotesk_500Medium,
+    SpaceGrotesk_600SemiBold,
+    SpaceGrotesk_700Bold,
+  });
+
+  if (!fontsLoaded && !fontError) {
+    return null;
+  }
+
   return (
     <ThemeProvider>
       <MainLayout />

@@ -34,24 +34,24 @@ export const getCollectionStyles = (theme: any, trophiesColor: string, trophiesD
     },
     title: {
       fontSize: 26,
-      fontWeight: '400',
+      fontFamily: 'SpaceGrotesk_400Regular',
       color: theme.textPrimary,
       letterSpacing: 0.5,
     },
     usernameHighlight: {
       color: trophiesColor,
-      fontWeight: '600',
+      fontFamily: 'SpaceGrotesk_600SemiBold',
     },
     count: {
       color: theme.textSecondary,
       fontSize: 13,
-      fontWeight: '500',
+      fontFamily: 'SpaceGrotesk_500Medium',
       marginTop: 10,
       marginLeft: 1,
     },
     countNum: {
       color: trophiesColor,
-      fontWeight: '600',
+      fontFamily: 'SpaceGrotesk_600SemiBold',
     },
 
     /* --- BARRE DE RECHERCHE --- */
@@ -108,7 +108,7 @@ export const getCollectionStyles = (theme: any, trophiesColor: string, trophiesD
       marginTop: 16,
       fontSize: 15,
       textAlign: 'center',
-      fontWeight: '600',
+      fontFamily: 'SpaceGrotesk_600SemiBold',
       color: theme.textSecondary,
     },
     emptySubText: {
@@ -140,7 +140,7 @@ export const getCollectionStyles = (theme: any, trophiesColor: string, trophiesD
     },
     titleCard: {
       fontSize: 15,
-      fontWeight: '700',
+      fontFamily: 'SpaceGrotesk_700Bold',
       marginBottom: 6,
       color: theme.textPrimary,
     },
@@ -153,7 +153,7 @@ export const getCollectionStyles = (theme: any, trophiesColor: string, trophiesD
       fontSize: 13,
       marginLeft: 6,
       color: theme.textSecondary,
-      fontWeight: '500',
+      fontFamily: 'SpaceGrotesk_500Medium',
     },
     progressBarBg: {
       height: 6,
@@ -169,7 +169,7 @@ export const getCollectionStyles = (theme: any, trophiesColor: string, trophiesD
     },
     progressText: {
       fontSize: 17,
-      fontWeight: '900',
+      fontFamily: 'SpaceGrotesk_700Bold',
       marginLeft: 12,
       width: 48,
       textAlign: 'right',
@@ -218,7 +218,7 @@ export const getCollectionStyles = (theme: any, trophiesColor: string, trophiesD
     detailTitle: {
       color: isLight ? '#ffffff' : theme.textPrimary,
       fontSize: 21,
-      fontWeight: '600',
+      fontFamily: 'SpaceGrotesk_600SemiBold',
       letterSpacing: 0.3,
       textShadowColor: isLight ? 'rgba(0,0,0,0.4)' : 'rgba(0,0,0,0.9)',
       textShadowOffset: { width: 0, height: 1 },
@@ -233,7 +233,7 @@ export const getCollectionStyles = (theme: any, trophiesColor: string, trophiesD
     detailDev: {
       color: trophiesColor,
       fontSize: 12,
-      fontWeight: '600',
+      fontFamily: 'SpaceGrotesk_600SemiBold',
     },
     closeDetailBtn: {
       position: 'absolute',

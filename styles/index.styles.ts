@@ -67,7 +67,7 @@ export const badgeStyles = StyleSheet.create({
   platformBadgeText: {
     color: '#fff',
     fontSize: 9,
-    fontWeight: '700',
+    fontFamily: 'SpaceGrotesk_700Bold',
     letterSpacing: 0.2,
   },
   igdbBadge: {
@@ -81,7 +81,7 @@ export const badgeStyles = StyleSheet.create({
   },
   igdbBadgeText: {
     fontSize: 9,
-    fontWeight: '800',
+    fontFamily: 'SpaceGrotesk_700Bold',
     letterSpacing: 0.3,
   },
 });
@@ -113,24 +113,24 @@ export const getBaseStyles = (theme: typeof C, accentColor: string, accentColorD
     },
     title: {
       fontSize: 26,
-      fontWeight: '400',
+      fontFamily: 'SpaceGrotesk_700Bold',
       color: theme.textPrimary,
       letterSpacing: 0.5,
     },
     usernameHighlight: {
       color: accentColor,
-      fontWeight: '600',
+      fontFamily: 'SpaceGrotesk_600SemiBold',
     },
     count: {
       color: theme.textSecondary,
       fontSize: 13,
-      fontWeight: '500',
+      fontFamily: 'SpaceGrotesk-Medium',
       marginTop: 10,
       marginLeft: 1,
     },
     countNum: {
       color: accentColor,
-      fontWeight: '600',
+      fontFamily: 'SpaceGrotesk_600SemiBold',
     },
     sortButton: {
       backgroundColor: theme.surface,
@@ -164,7 +164,7 @@ export const getBaseStyles = (theme: typeof C, accentColor: string, accentColorD
     },
     tabText: {
       color: theme.textSecondary,
-      fontWeight: '700',
+      fontFamily: 'SpaceGrotesk_700Bold',
       fontSize: 13,
       letterSpacing: 0.3,
     },
@@ -254,14 +254,14 @@ export const getBaseStyles = (theme: typeof C, accentColor: string, accentColorD
     cardTitle: {
       color: theme.textPrimary,
       fontSize: 13,
-      fontWeight: '700',
+      fontFamily: 'SpaceGrotesk_700Bold',
       letterSpacing: 0.2,
     },
     cardPlatform: {
       color: theme.textSecondary,
       fontSize: 10,
       marginTop: 3,
-      fontWeight: '600',
+      fontFamily: 'SpaceGrotesk_600SemiBold',
       textTransform: 'uppercase',
       letterSpacing: 0.5,
     },
@@ -286,7 +286,7 @@ export const getBaseStyles = (theme: typeof C, accentColor: string, accentColorD
     },
     statusText: {
       fontSize: 9,
-      fontWeight: '600',
+      fontFamily: 'SpaceGrotesk_600SemiBold',
       letterSpacing: 0.3,
     },
 
@@ -300,7 +300,7 @@ export const getBaseStyles = (theme: typeof C, accentColor: string, accentColorD
     emptyTitle: {
       color: theme.textSecondary,
       fontSize: 18,
-      fontWeight: '700',
+      fontFamily: 'SpaceGrotesk_700Bold',
     },
     emptySubtitle: {
       color: theme.textMuted,
@@ -363,7 +363,7 @@ export const getBaseStyles = (theme: typeof C, accentColor: string, accentColorD
     detailTitle: {
       color: isLight ? '#ffffff' : theme.textPrimary,
       fontSize: 21,
-      fontWeight: '600',
+      fontFamily: 'SpaceGrotesk_600SemiBold',
       letterSpacing: 0.3,
       textShadowColor: isLight ? 'rgba(0,0,0,0.4)' : 'rgba(0,0,0,0.9)',
       textShadowOffset: { width: 0, height: 1 },
@@ -378,7 +378,7 @@ export const getBaseStyles = (theme: typeof C, accentColor: string, accentColorD
     detailDev: {
       color: accentColor,
       fontSize: 12,
-      fontWeight: '600',
+      fontFamily: 'SpaceGrotesk_600SemiBold',
     },
     closeDetailBtn: {
       position: 'absolute',
@@ -413,7 +413,7 @@ export const getBaseStyles = (theme: typeof C, accentColor: string, accentColorD
     },
     subTabText: {
       color: theme.textSecondary,
-      fontWeight: '700',
+      fontFamily: 'SpaceGrotesk_700Bold',
       fontSize: 12,
       letterSpacing: 1.2,
     },
@@ -428,7 +428,7 @@ export const getBaseStyles = (theme: typeof C, accentColor: string, accentColorD
     sectionTitle: {
       color: accentColor,
       fontSize: 10,
-      fontWeight: '600',
+      fontFamily: 'SpaceGrotesk_600SemiBold',
       textTransform: 'uppercase',
       marginBottom: 12,
       marginTop: 8,
@@ -460,7 +460,7 @@ export const getBaseStyles = (theme: typeof C, accentColor: string, accentColorD
     },
     formatBtnText: {
       color: theme.textSecondary,
-      fontWeight: '700',
+      fontFamily: 'SpaceGrotesk_700Bold',
       fontSize: 13,
     },
     activeFormatBtnText: {
@@ -486,11 +486,11 @@ export const getBaseStyles = (theme: typeof C, accentColor: string, accentColorD
     pillText: {
       color: theme.textSecondary,
       fontSize: 12,
-      fontWeight: '600',
+      fontFamily: 'SpaceGrotesk_600SemiBold',
     },
     activePillText: {
       color: accentColor,
-      fontWeight: '700',
+      fontFamily: 'SpaceGrotesk_700Bold',
     },
     statusGrid: {
       flexDirection: 'row',
@@ -512,7 +512,7 @@ export const getBaseStyles = (theme: typeof C, accentColor: string, accentColorD
     statusOptionText: {
       color: theme.textSecondary,
       fontSize: 12,
-      fontWeight: '600',
+      fontFamily: 'SpaceGrotesk_600SemiBold',
     },
     playtimeRow: {
       flexDirection: 'row',
@@ -529,11 +529,11 @@ export const getBaseStyles = (theme: typeof C, accentColor: string, accentColorD
       flex: 1,
       color: theme.textPrimary,
       fontSize: 20,
-      fontWeight: '600',
+      fontFamily: 'SpaceGrotesk_600SemiBold',
     },
     playtimeLabel: {
       color: theme.textSecondary,
-      fontWeight: '700',
+      fontFamily: 'SpaceGrotesk_700Bold',
       fontSize: 13,
     },
     deleteBtn: {
@@ -549,7 +549,7 @@ export const getBaseStyles = (theme: typeof C, accentColor: string, accentColorD
     },
     deleteBtnText: {
       color: theme.red,
-      fontWeight: '700',
+      fontFamily: 'SpaceGrotesk_700Bold',
       fontSize: 14,
     },
 
@@ -593,7 +593,7 @@ export const getBaseStyles = (theme: typeof C, accentColor: string, accentColorD
     listTitle: {
       color: theme.textPrimary,
       fontSize: 14,
-      fontWeight: '700',
+      fontFamily: 'SpaceGrotesk_700Bold',
       letterSpacing: 0.2,
     },
     listBadgesRow: {
@@ -615,7 +615,7 @@ export const getBaseStyles = (theme: typeof C, accentColor: string, accentColorD
     },
     listStatusText: {
       fontSize: 10,
-      fontWeight: '600',
+      fontFamily: 'SpaceGrotesk_600SemiBold',
       letterSpacing: 0.2,
     },
     listCheckCircle: {
@@ -694,7 +694,7 @@ export const getBaseStyles = (theme: typeof C, accentColor: string, accentColorD
       flex: 1,
       color: theme.textPrimary,
       fontSize: 14,
-      fontWeight: '600',
+      fontFamily: 'SpaceGrotesk_600SemiBold',
       textAlign: 'center',
     },
     selectionDeleteBtn: {
@@ -708,7 +708,7 @@ export const getBaseStyles = (theme: typeof C, accentColor: string, accentColorD
     },
     selectionDeleteBtnText: {
       color: '#fff',
-      fontWeight: '700',
+      fontFamily: 'SpaceGrotesk_700Bold',
       fontSize: 14,
     },
 
@@ -739,14 +739,14 @@ export const getBaseStyles = (theme: typeof C, accentColor: string, accentColorD
     detailLabel: {
       color: theme.textSecondary,
       fontSize: 12,
-      fontWeight: '600',
+      fontFamily: 'SpaceGrotesk_600SemiBold',
       textTransform: 'uppercase',
       letterSpacing: 0.5,
     },
     detailValue: {
       color: theme.textPrimary,
       fontSize: 13,
-      fontWeight: '600',
+      fontFamily: 'SpaceGrotesk_600SemiBold',
       flex: 1,
       textAlign: 'right',
       marginLeft: 20,
@@ -809,7 +809,7 @@ export const getBaseStyles = (theme: typeof C, accentColor: string, accentColorD
     modalTitle: {
       color: theme.textPrimary,
       fontSize: 16,
-      fontWeight: '600',
+      fontFamily: 'SpaceGrotesk_600SemiBold',
       marginBottom: 16,
       textAlign: 'center',
       letterSpacing: 0.5,
@@ -842,11 +842,11 @@ export const getBaseStyles = (theme: typeof C, accentColor: string, accentColorD
     sortOptionText: {
       color: theme.textPrimary,
       fontSize: 14,
-      fontWeight: '600',
+      fontFamily: 'SpaceGrotesk_600SemiBold',
     },
     activeSortOptionText: {
       color: accentColor,
-      fontWeight: '700',
+      fontFamily: 'SpaceGrotesk_700Bold',
     },
 
     // SEARCH MODAL
@@ -905,7 +905,7 @@ export const getBaseStyles = (theme: typeof C, accentColor: string, accentColorD
     },
     closeText: {
       color: accentColor,
-      fontWeight: '700',
+      fontFamily: 'SpaceGrotesk_700Bold',
       fontSize: 14,
     },
     searchItem: {
@@ -924,12 +924,12 @@ export const getBaseStyles = (theme: typeof C, accentColor: string, accentColorD
     searchTitle: {
       color: theme.textPrimary,
       fontSize: 14,
-      fontWeight: '700',
+      fontFamily: 'SpaceGrotesk_700Bold',
     },
     searchPlatform: {
       color: accentColor,
       fontSize: 11,
-      fontWeight: '700',
+      fontFamily: 'SpaceGrotesk_700Bold',
       marginTop: 3,
       textTransform: 'uppercase',
       letterSpacing: 0.5,
@@ -948,7 +948,7 @@ export const getBaseStyles = (theme: typeof C, accentColor: string, accentColorD
     },
     selectionCountText: {
       color: accentColor, 
-      fontWeight: '700',
+      fontFamily: 'SpaceGrotesk_700Bold',
     },
     disabledDeleteBtn: {
       opacity: 0.4,

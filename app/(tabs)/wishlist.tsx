@@ -64,7 +64,7 @@ const DetailRow = ({ label, value, highlight, styles, accentColor }: { label: st
   return (
     <View style={styles.detailRow}>
       <Text style={styles.detailLabel}>{label}</Text>
-      <Text style={[styles.detailValue, highlight && { color: accentColor, fontWeight: '700' }]}>{value}</Text>
+      <Text style={[styles.detailValue, highlight && { color: accentColor, fontFamily: 'SpaceGrotesk_700Bold' }]}>{value}</Text>
     </View>
   );
 };
@@ -869,12 +869,12 @@ export default function WishlistScreen() {
                           {item.selectedPlatform}
                         </Text>
                         {isAlreadyInCollection && (
-                          <Text style={{ color: currentTheme.primary, fontSize: 10, marginTop: 2, fontWeight: '600' }}>
+                          <Text style={{ color: currentTheme.primary, fontSize: 10, marginTop: 2, fontFamily: 'SpaceGrotesk_600SemiBold' }}>
                             Déjà dans la collection
                           </Text>
                         )}
                         {isAlreadyInWishlist && (
-                          <Text style={{ color: currentTheme.pink || '#ff66b2', fontSize: 10, marginTop: 2, fontWeight: '600' }}>
+                          <Text style={{ color: currentTheme.pink || '#ff66b2', fontSize: 10, marginTop: 2, fontFamily: 'SpaceGrotesk_600SemiBold' }}>
                             Déjà dans la wishlist
                           </Text>
                         )}
@@ -916,7 +916,7 @@ export default function WishlistScreen() {
             <MaterialCommunityIcons name="close" size={18} color={currentTheme.textSecondary} />
           </TouchableOpacity>
           <Text style={defaultStyles.selectionBarText}>
-            <Text style={{ color: accentColor, fontWeight: '700' }}>{selectedIds.size}</Text>
+            <Text style={{ color: accentColor, fontFamily: 'SpaceGrotesk_700Bold' }}>{selectedIds.size}</Text>
             {' '}sélectionné{selectedIds.size > 1 ? 's' : ''}
           </Text>
           <TouchableOpacity

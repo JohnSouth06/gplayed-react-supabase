@@ -17,12 +17,12 @@ export const getWishlistStyles = (theme: any, accentColor: string) => StyleSheet
   cardCountdownText: {
     color: '#fff',
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: 'SpaceGrotesk_700Bold',
   },
   countdownText: {
     color: accentColor,
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: 'SpaceGrotesk_600SemiBold',
     marginTop: 2,
   },
   desireBadge: {
@@ -46,7 +46,7 @@ export const getWishlistStyles = (theme: any, accentColor: string) => StyleSheet
   },
   transferBtnText: {
     color: theme.bg,
-    fontWeight: '700',
+    fontFamily: 'SpaceGrotesk_700Bold',
     fontSize: 14,
   },
   
@@ -73,7 +73,7 @@ export const getWishlistStyles = (theme: any, accentColor: string) => StyleSheet
   },
   suggestionTitle: {
     fontSize: 13, 
-    fontWeight: '600', 
+    fontFamily: 'SpaceGrotesk_600SemiBold', 
     color: theme.textSecondary,
   },
   suggestionListContent: {
@@ -93,7 +93,7 @@ export const getWishlistStyles = (theme: any, accentColor: string) => StyleSheet
     color: theme.textPrimary, 
     marginTop: 5, 
     fontSize: 11, 
-    fontWeight: '500' 
+    fontFamily: 'SpaceGrotesk_500Medium' 
   },
   suggestionCover: {
     width: 85, 
@@ -105,7 +105,7 @@ export const getWishlistStyles = (theme: any, accentColor: string) => StyleSheet
     color: theme.textPrimary, 
     marginTop: 5, 
     fontSize: 11, 
-    fontWeight: '500' 
+    fontFamily: 'SpaceGrotesk_500Medium' 
   },
   
   /* --- STYLES DES ONGLETS (TABS) --- */

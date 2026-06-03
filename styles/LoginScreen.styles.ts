@@ -1,5 +1,5 @@
 // styles/login.styles.ts
-import { StyleSheet, Platform } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 export const getLoginStyles = (theme: any) => {
   return {
@@ -52,7 +52,7 @@ export const getLoginStyles = (theme: any) => {
       tagline: {
         fontSize: 15,
         color: theme.textSecondary,
-        fontWeight: '400',
+        fontFamily: 'SpaceGrotesk_400Regular',
         letterSpacing: 0.3,
       },
       formCard: {
@@ -72,7 +72,7 @@ export const getLoginStyles = (theme: any) => {
       forgotText: {
         color: theme.textSecondary,
         fontSize: 13,
-        fontWeight: '600',
+        fontFamily: 'SpaceGrotesk_600SemiBold',
       },
       mainButton: {
         backgroundColor: theme.primary,
@@ -92,7 +92,7 @@ export const getLoginStyles = (theme: any) => {
       mainButtonText: {
         color: theme.bg,
         fontSize: 15,
-        fontWeight: '600',
+        fontFamily: 'SpaceGrotesk_600SemiBold',
         letterSpacing: 1,
       },
       toggleButton: {
@@ -102,11 +102,11 @@ export const getLoginStyles = (theme: any) => {
       toggleText: {
         color: theme.textSecondary,
         fontSize: 14,
-        fontWeight: '500',
+        fontFamily: 'SpaceGrotesk_400Regular',
       },
       toggleTextAccent: {
         color: theme.primary,
-        fontWeight: '700',
+        fontFamily: 'SpaceGrotesk_700Bold',
       },
       dividerContainer: {
         flexDirection: 'row',
@@ -122,7 +122,7 @@ export const getLoginStyles = (theme: any) => {
       dividerText: {
         color: theme.textMuted,
         fontSize: 12,
-        fontWeight: '600',
+        fontFamily: 'SpaceGrotesk_600SemiBold',
         textTransform: 'uppercase',
         letterSpacing: 1,
       },
@@ -156,7 +156,7 @@ export const getLoginStyles = (theme: any) => {
       socialButtonText: {
         color: theme.textPrimary,
         fontSize: 14,
-        fontWeight: '700',
+        fontFamily: 'SpaceGrotesk_700Bold',
         flex: 1,
       },
       modalOverlay: {
@@ -199,7 +199,7 @@ export const getLoginStyles = (theme: any) => {
       modalTitle: {
         color: theme.textPrimary,
         fontSize: 20,
-        fontWeight: '600',
+        fontFamily: 'SpaceGrotesk_600SemiBold',
         marginBottom: 6,
         letterSpacing: 0.3,
       },
@@ -226,7 +226,7 @@ export const getLoginStyles = (theme: any) => {
       },
       modalBtnCancelText: {
         color: theme.textSecondary,
-        fontWeight: '700',
+        fontFamily: 'SpaceGrotesk_700Bold',
         fontSize: 14,
       },
       modalBtnConfirm: {
@@ -244,7 +244,7 @@ export const getLoginStyles = (theme: any) => {
       },
       modalBtnConfirmText: {
         color: theme.bg,
-        fontWeight: '600',
+        fontFamily: 'SpaceGrotesk_600SemiBold',
         fontSize: 14,
         letterSpacing: 0.5,
       },

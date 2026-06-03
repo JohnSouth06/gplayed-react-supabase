@@ -320,7 +320,7 @@ export default function PsnTrophiesScreen() {
                           <Image source={{ uri: item.trophy_icon_url }} style={{ width: 55, height: 55, borderRadius: 10, marginRight: 15 }} />
                           
                           <View style={{ flex: 1 }}>
-                            <Text style={{ color: currentTheme.textPrimary, fontWeight: 'bold', fontSize: 16, marginBottom: 4 }}>
+                            <Text style={{ color: currentTheme.textPrimary, fontFamily: 'SpaceGrotesk_700Bold', fontSize: 16, marginBottom: 4 }}>
                               {item.trophy_name}
                             </Text>
                             <Text style={{ color: currentTheme.textSecondary, fontSize: 13, lineHeight: 18 }}>

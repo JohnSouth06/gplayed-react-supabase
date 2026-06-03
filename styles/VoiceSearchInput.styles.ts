@@ -13,7 +13,7 @@ export const styles = StyleSheet.create({
   text: {
     fontSize: 13,
     color: '#888',
-    fontWeight: '500',
+    fontFamily: 'SpaceGrotesk_500Medium',
     textAlign: 'center',
     maxWidth: '85%',
   },

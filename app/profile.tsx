@@ -326,7 +326,7 @@ export default function ProfileScreen() {
               {syncing ? (
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
-                <Text style={{ color: '#fff', fontWeight: '600', fontSize: 13 }}>Synchroniser</Text>
+                <Text style={{ color: '#fff', fontFamily: 'SpaceGrotesk_600SemiBold', fontSize: 13 }}>Synchroniser</Text>
               )}
             </TouchableOpacity>
           </View>

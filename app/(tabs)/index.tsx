@@ -52,7 +52,7 @@ const DetailRow = ({ label, value, highlight, styles, accentColor }: { label: st
   return (
     <View style={styles.detailRow}>
       <Text style={styles.detailLabel}>{label}</Text>
-      <Text style={[styles.detailValue, highlight && { color: accentColor, fontWeight: '700' }]}>{value}</Text>
+      <Text style={[styles.detailValue, highlight && { color: accentColor, fontFamily: 'SpaceGrotesk_700Bold' }]}>{value}</Text>
     </View>
   );
 };
@@ -731,7 +731,7 @@ const getStatusColor = (displayStatus: string) => {
                           {item.selectedPlatform}
                         </Text>
                         {isInWishlist && (
-                          <Text style={{ color: currentTheme.pink, fontSize: 10, marginTop: 2, fontWeight: '600' }}>
+                          <Text style={{ color: currentTheme.pink, fontSize: 10, marginTop: 2, fontFamily: 'SpaceGrotesk_600SemiBold' }}>
                             Dans votre wishlist
                           </Text>
                         )}
