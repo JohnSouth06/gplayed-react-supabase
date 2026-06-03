@@ -19,7 +19,7 @@ export const styles = StyleSheet.create({
   },
   textListening: {
     color: '#aaa',
-    fontStyle: 'italic',
+    fontFamily: 'SpaceGrotesk_300Light',
   },
   buttonWrapper: {
     width: BUTTON_SIZE,

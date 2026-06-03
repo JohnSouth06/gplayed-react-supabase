@@ -1,3 +1,11 @@
+import {
+  SpaceGrotesk_300Light,
+  SpaceGrotesk_400Regular,
+  SpaceGrotesk_500Medium,
+  SpaceGrotesk_600SemiBold,
+  SpaceGrotesk_700Bold,
+  useFonts
+} from '@expo-google-fonts/space-grotesk';
 import { Session } from '@supabase/supabase-js';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -133,7 +141,6 @@ function MainLayout() {
       <Stack>
         <Stack.Screen name="(auth)/LoginScreen" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
 
       {/* On n'affiche le Splash que si l'app n'est pas prête ET que la source Lottie existe */}
