@@ -7,7 +7,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Logo from '../../assets/images/logo.svg';
 import { useCustomTheme } from '../../context/ThemeContext';
 
-// ─── Composant Avatar dans le header ────────────────────────────────────────
 function HeaderAvatar() {
   const { theme: currentTheme } = useCustomTheme();
   const router = useRouter();
@@ -36,7 +35,6 @@ function HeaderAvatar() {
       style={avatarStyles.touchable}
       activeOpacity={0.8}
     >
-      {/* Utilisation de currentTheme pour l'anneau */}
       <View style={[avatarStyles.ring, { borderColor: `${currentTheme.primary}66` }]}>
         <View style={[avatarStyles.inner, { backgroundColor: currentTheme.surface }]}>
           {avatarUrl ? (
@@ -54,7 +52,6 @@ function HeaderAvatar() {
   );
 }
 
-// ─── Composant icône de tab bar ──────────────────────────────────────────────
 type TabIconProps = {
   name: string;
   color: string;
@@ -73,10 +70,52 @@ function TabIcon({ name, color, focused }: TabIconProps) {
   );
 }
 
-// ─── Layout principal ────────────────────────────────────────────────────────
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const { theme: currentTheme } = useCustomTheme(); 
+  const [hasPsnId, setHasPsnId] = useState<boolean>(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    let channel: ReturnType<typeof supabase.channel>;
+
+    const fetchPsnStatus = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('profiles')
+        .select('psn_id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (isMounted && data) {
+        setHasPsnId(!!data.psn_id && data.psn_id.trim() !== '');
+      }
+
+      channel = supabase
+        .channel('public:profiles_layout')
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` },
+          (payload) => {
+            if (isMounted && payload.new) {
+              setHasPsnId(!!payload.new.psn_id && payload.new.psn_id.trim() !== '');
+            }
+          }
+        )
+        .subscribe();
+    };
+
+    fetchPsnStatus();
+
+    return () => {
+      isMounted = false;
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, []);
 
   return (   
     <Tabs
@@ -123,7 +162,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Collection',
-          tabBarActiveTintColor: currentTheme.primary, // Conserve le vert (primary)
+          tabBarActiveTintColor: currentTheme.primary,
           tabBarIcon: ({ color, focused }) => (
             <TabIcon name="gamepad-variant-outline" color={color} focused={focused} />
           ),
@@ -133,7 +172,7 @@ export default function TabLayout() {
         name="wishlist"
         options={{
           title: 'Wishlist',
-          tabBarActiveTintColor: currentTheme.wishlist, // Utilise le rouge saumon de Theme.ts
+          tabBarActiveTintColor: currentTheme.wishlist, 
           tabBarIcon: ({ color, focused }) => (
             <TabIcon name="heart-outline" color={color} focused={focused} />
           ),
@@ -142,8 +181,11 @@ export default function TabLayout() {
       <Tabs.Screen
         name="psntrophies"
         options={{
+          // Condition : si false, on passe null à href pour cacher l'onglet
+          href: hasPsnId ? '/(tabs)/psntrophies' : null,
           title: 'Trophées',
-          tabBarActiveTintColor: currentTheme.trophies, // Utilise le bleu pour contraster
+          // Conservation de la couleur centralisée du thème
+          tabBarActiveTintColor: currentTheme.trophies, 
           tabBarIcon: ({ color, focused }) => (
             <TabIcon name="trophy-outline" color={color} focused={focused} />
           ),
@@ -153,7 +195,7 @@ export default function TabLayout() {
         name="stats"
         options={{
           title: 'Stats',
-          tabBarActiveTintColor: currentTheme.yellow, // Utilise le jaune
+          tabBarActiveTintColor: currentTheme.yellow,
           tabBarIcon: ({ color, focused }) => (
             <TabIcon name="chart-areaspline-variant" color={color} focused={focused} />
           ),
