@@ -674,7 +674,7 @@ const getStatusColor = (displayStatus: string) => {
                 <MaterialCommunityIcons name="magnify" size={18} color={currentTheme.textSecondary} style={{ marginRight: 10 }} />
                 <TextInput
                   style={styles.searchInput}
-                  placeholder="Rechercher jeu..."
+                  placeholder="Rechercher un jeu..."
                   placeholderTextColor={currentTheme.textMuted}
                   value={searchQuery}
                   onChangeText={setSearchQuery}

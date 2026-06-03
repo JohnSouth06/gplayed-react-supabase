@@ -187,7 +187,8 @@ export const getBaseStyles = (theme: typeof C, accentColor: string, accentColorD
     collectionSearchInput: {
       flex: 1,
       color: theme.textPrimary,
-      fontSize: 14,
+      fontFamily: 'SpaceGrotesk_300Light',
+      fontSize: 13,
       marginLeft: 10,
     },
     searchRow: {
@@ -717,6 +718,7 @@ export const getBaseStyles = (theme: typeof C, accentColor: string, accentColorD
     descriptionText: {
       color: isLight ? theme.textSecondary : '#BBBBBB',
       fontSize: 14,
+      fontFamily: 'SpaceGrotesk_300Light',
       lineHeight: 23,
       marginBottom: 28,
     },
@@ -893,7 +895,8 @@ export const getBaseStyles = (theme: typeof C, accentColor: string, accentColorD
     searchInput: {
       flex: 1,
       color: theme.textPrimary,
-      fontSize: 14,
+      fontFamily: 'SpaceGrotesk_300Light',
+      fontSize: 13,
     },
     closeSearchBtn: {
       paddingHorizontal: isLight ? 12 : 4,
