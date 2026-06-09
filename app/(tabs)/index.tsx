@@ -4,6 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useMemo, useState } from 'react';
+import BarcodeScanner from '../../components/BarcodeScanner';
 import {
   ActivityIndicator, Alert, FlatList, Image, Modal,
   RefreshControl, ScrollView, TextInput, TouchableOpacity,
@@ -58,12 +59,12 @@ const DetailRow = ({ label, value, highlight, styles, accentColor }: { label: st
 };
 
 export default function DashboardScreen() {
-  const { theme: currentTheme } = useCustomTheme(); 
+  const { theme: currentTheme } = useCustomTheme();
   const accentColor = currentTheme.primary;
 
-  const styles = useMemo(() => 
-    getBaseStyles(currentTheme, accentColor, currentTheme.primaryDim), 
-  [currentTheme, accentColor]);
+  const styles = useMemo(() =>
+    getBaseStyles(currentTheme, accentColor, currentTheme.primaryDim),
+    [currentTheme, accentColor]);
   // ───────────────────────────────────────────────────────────────────────────
 
   const [username, setUsername] = useState<string | null>(null);
@@ -97,39 +98,39 @@ export default function DashboardScreen() {
 
   const fetchGames = async () => {
     try {
-    setLoading(true);
-    
-    const user = await getCurrentUser();
-    
-    if (!user) {
-      setLoading(false);
-      return;
-    }
+      setLoading(true);
 
-    const collectionData = await getUserCollection(user.id);
+      const user = await getCurrentUser();
 
-    const dashboardData = collectionData.filter(item => item.status !== 'wishlist');
-    const formattedCollection = dashboardData.map(item => ({
-      ...item,
-      title: item.game?.title || 'Titre inconnu',
-      cover_url: item.game?.cover_url,
-      genres: item.game?.genres,
-      rating_igdb: item.game?.rating_igdb,
-      platforms_list: item.game?.platforms_list,
-      release_date: item.game?.release_date,
-      developer: item.game?.developer,
-      publisher: item.game?.publisher,
-      game_modes: item.game?.game_modes,
-      engine: item.game?.engine,
-      description: item.game?.description,
-      screenshots: item.game?.screenshots,
-      displayFormat: MAP_SQL_TO_FORMAT[item.format as keyof typeof MAP_SQL_TO_FORMAT],
-      displayStatus: MAP_SQL_TO_STATUS[item.status as keyof typeof MAP_SQL_TO_STATUS]
-    }));
-    setMyGames(formattedCollection);
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      const collectionData = await getUserCollection(user.id);
+
+      const dashboardData = collectionData.filter(item => item.status !== 'wishlist');
+      const formattedCollection = dashboardData.map(item => ({
+        ...item,
+        title: item.game?.title || 'Titre inconnu',
+        cover_url: item.game?.cover_url,
+        genres: item.game?.genres,
+        rating_igdb: item.game?.rating_igdb,
+        platforms_list: item.game?.platforms_list,
+        release_date: item.game?.release_date,
+        developer: item.game?.developer,
+        publisher: item.game?.publisher,
+        game_modes: item.game?.game_modes,
+        engine: item.game?.engine,
+        description: item.game?.description,
+        screenshots: item.game?.screenshots,
+        displayFormat: MAP_SQL_TO_FORMAT[item.format as keyof typeof MAP_SQL_TO_FORMAT],
+        displayStatus: MAP_SQL_TO_STATUS[item.status as keyof typeof MAP_SQL_TO_STATUS]
+      }));
+      setMyGames(formattedCollection);
       const profileData = await getUserProfile(user.id);
       if (profileData) setUsername(profileData.username);
-      } catch (e: any) {
+    } catch (e: any) {
       if (e.message !== 'Auth session missing!') {
         console.error("Erreur récupération:", e.message);
       }
@@ -184,7 +185,7 @@ export default function DashboardScreen() {
   const toggleSelection = (id: string) => {
     setSelectedIds(prev => {
       const next = new Set(prev);
-      if (next.has(id)) { next.delete(id); if (next.size === 0) setSelectionMode(false); } 
+      if (next.has(id)) { next.delete(id); if (next.size === 0) setSelectionMode(false); }
       else { next.add(id); }
       return next;
     });
@@ -196,7 +197,8 @@ export default function DashboardScreen() {
     const count = selectedIds.size;
     Alert.alert(`Supprimer ${count} jeu${count > 1 ? 'x' : ''} ?`, `Voulez-vous vraiment retirer ${count > 1 ? 'ces titres' : 'ce titre'} de votre collection ?`, [
       { text: "Annuler", style: "cancel" },
-      { text: "Supprimer", style: "destructive", onPress: async () => {
+      {
+        text: "Supprimer", style: "destructive", onPress: async () => {
           try {
             const ids = Array.from(selectedIds);
             await Promise.all(ids.map(id => removeGameFromCollection(id)));
@@ -211,7 +213,7 @@ export default function DashboardScreen() {
   const handleSearch = async (overrideQuery?: string | any) => {
     // Si on passe un texte explicite (ex: via la voix), on l'utilise. Sinon, on prend le texte de l'input.
     const queryToUse = typeof overrideQuery === 'string' ? overrideQuery : searchQuery;
-    
+
     if (!queryToUse.trim()) return;
     setSearching(true);
     try {
@@ -233,6 +235,13 @@ export default function DashboardScreen() {
     } catch (e) { setResults([]); } finally { setSearching(false); }
   };
 
+  const handleBarcodeGameFound = (gameData: any) => {
+    setResults([gameData]);
+    setSearchQuery(gameData.name ?? '');
+    setModalVisible(true);
+  };
+
+
   const handleAddGame = async (gameData: any) => {
     try {
       const user = await getCurrentUser();
@@ -251,17 +260,17 @@ export default function DashboardScreen() {
     } catch (error: any) { alert(error.message); }
   };
 
-const getStatusColor = (displayStatus: string) => {
+  const getStatusColor = (displayStatus: string) => {
     switch (displayStatus) {
-      case 'En cours': 
+      case 'En cours':
         return accentColor;
-      case 'Terminé': 
+      case 'Terminé':
         return currentTheme.blue;
-      case 'Platiné - 100%': 
+      case 'Platiné - 100%':
         return currentTheme.yellow;
-      case 'Abandonné': 
+      case 'Abandonné':
         return currentTheme.red;
-      default: 
+      default:
         return currentTheme.grey;
     }
   };
@@ -698,12 +707,18 @@ const getStatusColor = (displayStatus: string) => {
               </TouchableOpacity>
             </View>
 
-            <VoiceSearchInput 
-              onSearch={setSearchQuery} 
-              onSubmit={(finalText) => handleSearch(finalText)}
-              placeholder="...ou appuyez pour dicter" 
+            <BarcodeScanner
+              onGameFound={handleBarcodeGameFound}
+              onError={(msg) => alert(msg)}
             />
-            
+            <VoiceSearchInput
+              onSearch={setSearchQuery}
+              onSubmit={(finalText) => handleSearch(finalText)}
+              placeholder="...ou appuyez pour dicter"
+            />
+
+
+
             {searching ? (
               <ActivityIndicator color={accentColor} style={{ marginTop: 30 }} />
             ) : (
