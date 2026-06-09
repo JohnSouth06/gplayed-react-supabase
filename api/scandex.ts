@@ -1,21 +1,10 @@
-import { searchGames } from './igdb';
+import { fetchFromIGDB } from './igdb';
 
 const SCANDEX_API_KEY = process.env.EXPO_PUBLIC_SCANDEX_API_KEY;
-const SCANDEX_BASE_URL = 'https://scandex.gamery.app/api/v1';
-
-interface ScanDexResult {
-  id: number;
-  is_suggestion: boolean;
-  title: string;
-  platform: string;
-  igdb_metadata: {
-    id: number;
-    platform_id: number;
-  };
-}
+const SCANDEX_BASE_URL = 'https://scandex.gamery.app/api/v2';
 
 /**
- * Recherche un jeu via son code-barres EAN/UPC sur ScanDex,
+ * Recherche un jeu via son code-barres EAN/UPC sur ScanDex (v2),
  * puis récupère les détails complets depuis IGDB.
  */
 export const lookupBarcode = async (barcode: string) => {
@@ -23,10 +12,10 @@ export const lookupBarcode = async (barcode: string) => {
     throw new Error("Clé API ScanDex manquante. Vérifiez EXPO_PUBLIC_SCANDEX_API_KEY dans votre .env");
   }
 
-  // 1. Requête ScanDex pour résoudre le code-barres
-  const response = await fetch(`${SCANDEX_BASE_URL}/lookup?ean=${barcode}`, {
+  // 1. Requête ScanDex — paramètre "value" (pas "ean")
+  const response = await fetch(`${SCANDEX_BASE_URL}/lookup?value=${barcode}`, {
     headers: {
-      'Authorization': `Bearer ${SCANDEX_API_KEY}`,
+      'Authorization': SCANDEX_API_KEY,
       'Accept': 'application/json',
     },
   });
@@ -40,19 +29,17 @@ export const lookupBarcode = async (barcode: string) => {
     throw new Error(err?.message || `Erreur ScanDex (${response.status})`);
   }
 
-  const result: ScanDexResult = await response.json();
+  const result = await response.json();
 
-  // 2. On récupère les détails complets depuis IGDB via l'igdb_id
-  const igdbId = result.igdb_metadata?.id;
-  const platformName = result.platform;
-
-  if (!igdbId) {
-    throw new Error('Correspondance IGDB introuvable pour ce jeu.');
+  // Cas où le code-barres est connu mais pas encore associé à un jeu IGDB
+  if (!result.igdb_metadata) {
+    throw new Error('Ce jeu est dans la base ScanDex mais sans correspondance IGDB pour l\'instant.');
   }
 
-  // On utilise fetchFromIGDB directement pour récupérer par ID
-  const { fetchFromIGDB } = await import('./igdb');
+  const igdbId = result.igdb_metadata.id;
+  const platformName = result.igdb_metadata.platform?.name;
 
+  // 2. Récupération des détails complets depuis IGDB
   const fields = [
     'name', 'summary', 'total_rating', 'cover.url', 'screenshots.url',
     'first_release_date', 'genres.name', 'platforms.name', 'version_parent',
